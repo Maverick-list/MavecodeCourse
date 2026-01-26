@@ -623,16 +623,34 @@ async def chat_with_ai(data: ChatMessage):
     articles = await db.articles.find({}, {'_id': 0, 'title': 1, 'excerpt': 1}).to_list(10)
     faqs = await db.faqs.find({}, {'_id': 0, 'question': 1, 'answer': 1}).to_list(20)
     
+    # Build context string
+    courses_text = "Belum ada kursus"
+    if courses:
+        course_lines = []
+        for c in courses:
+            desc = c.get('description', '')[:100]
+            price_text = 'Gratis' if c.get('is_free') else f"Rp{c.get('price', 0):,.0f}"
+            course_lines.append(f"- {c['title']}: {desc}... ({price_text})")
+        courses_text = "\n".join(course_lines)
+    
+    articles_text = "Belum ada artikel"
+    if articles:
+        articles_text = "\n".join([f"- {a['title']}" for a in articles])
+    
+    faqs_text = "Belum ada FAQ"
+    if faqs:
+        faqs_text = "\n".join([f"Q: {f['question']} A: {f['answer']}" for f in faqs])
+    
     context = f"""Kamu adalah asisten AI Mavecode, platform belajar coding Indonesia.
 
 Kursus yang tersedia:
-{chr(10).join([f"- {c['title']}: {c['description'][:100]}... ({'Gratis' if c.get('is_free') else f'Rp{c.get(\"price\", 0):,.0f}'})" for c in courses]) if courses else 'Belum ada kursus'}
+{courses_text}
 
 Artikel terbaru:
-{chr(10).join([f"- {a['title']}" for a in articles]) if articles else 'Belum ada artikel'}
+{articles_text}
 
 FAQ:
-{chr(10).join([f"Q: {f['question']} A: {f['answer']}" for f in faqs]) if faqs else 'Belum ada FAQ'}
+{faqs_text}
 
 Informasi kontak:
 - Email: firzailmidja@gmail.com
