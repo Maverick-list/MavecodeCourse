@@ -111,12 +111,12 @@ export const CoursesPage = () => {
             </div>
 
             {/* Category Filter */}
-            <Select value={categoryFilter} onValueChange={(v) => updateFilter('category', v)}>
+            <Select value={categoryFilter || "all"} onValueChange={(v) => updateFilter('category', v === "all" ? "" : v)}>
               <SelectTrigger className="w-full lg:w-48" data-testid="filter-category">
                 <SelectValue placeholder="Kategori" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Semua Kategori</SelectItem>
+                <SelectItem value="all">Semua Kategori</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                 ))}
@@ -124,12 +124,12 @@ export const CoursesPage = () => {
             </Select>
 
             {/* Level Filter */}
-            <Select value={levelFilter} onValueChange={(v) => updateFilter('level', v)}>
+            <Select value={levelFilter || "all"} onValueChange={(v) => updateFilter('level', v === "all" ? "" : v)}>
               <SelectTrigger className="w-full lg:w-40" data-testid="filter-level">
                 <SelectValue placeholder="Level" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Semua Level</SelectItem>
+                <SelectItem value="all">Semua Level</SelectItem>
                 <SelectItem value="beginner">Pemula</SelectItem>
                 <SelectItem value="intermediate">Menengah</SelectItem>
                 <SelectItem value="advanced">Lanjutan</SelectItem>
@@ -137,12 +137,12 @@ export const CoursesPage = () => {
             </Select>
 
             {/* Price Filter */}
-            <Select value={priceFilter} onValueChange={(v) => updateFilter('price', v)}>
+            <Select value={priceFilter || "all"} onValueChange={(v) => updateFilter('price', v === "all" ? "" : v)}>
               <SelectTrigger className="w-full lg:w-40" data-testid="filter-price">
                 <SelectValue placeholder="Harga" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Semua Harga</SelectItem>
+                <SelectItem value="all">Semua Harga</SelectItem>
                 <SelectItem value="free">Gratis</SelectItem>
                 <SelectItem value="paid">Berbayar</SelectItem>
               </SelectContent>
