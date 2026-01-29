@@ -614,76 +614,13 @@ async def get_progress(course_id: str, user: dict = Depends(get_current_user)):
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_with_ai(data: ChatMessage):
-    from emergentintegrations.llm.chat import LlmChat, UserMessage
-    
     session_id = data.session_id or str(uuid.uuid4())
     
-    # Fetch platform data for context
-    courses = await db.courses.find({}, {'_id': 0, 'title': 1, 'description': 1, 'price': 1, 'is_free': 1}).to_list(20)
-    articles = await db.articles.find({}, {'_id': 0, 'title': 1, 'excerpt': 1}).to_list(10)
-    faqs = await db.faqs.find({}, {'_id': 0, 'question': 1, 'answer': 1}).to_list(20)
-    
-    # Build context string
-    courses_text = "Belum ada kursus"
-    if courses:
-        course_lines = []
-        for c in courses:
-            desc = c.get('description', '')[:100]
-            price_text = 'Gratis' if c.get('is_free') else f"Rp{c.get('price', 0):,.0f}"
-            course_lines.append(f"- {c['title']}: {desc}... ({price_text})")
-        courses_text = "\n".join(course_lines)
-    
-    articles_text = "Belum ada artikel"
-    if articles:
-        articles_text = "\n".join([f"- {a['title']}" for a in articles])
-    
-    faqs_text = "Belum ada FAQ"
-    if faqs:
-        faqs_text = "\n".join([f"Q: {f['question']} A: {f['answer']}" for f in faqs])
-    
-    context = f"""Kamu adalah asisten AI Mavecode, platform belajar coding Indonesia.
-
-Kursus yang tersedia:
-{courses_text}
-
-Artikel terbaru:
-{articles_text}
-
-FAQ:
-{faqs_text}
-
-Informasi kontak:
-- Email: firzailmidja@gmail.com
-- WhatsApp: +62 851 9176 9521
-
-Jawab dalam Bahasa Indonesia. Berikan jawaban yang ramah dan informatif."""
-    
-    try:
-        api_key = os.environ.get('EMERGENT_LLM_KEY')
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=session_id,
-            system_message=context
-        ).with_model("openai", "gpt-4o-mini")
-        
-        user_message = UserMessage(text=data.message)
-        response = await chat.send_message(user_message)
-        
-        # Store chat history
-        await db.chat_history.insert_one({
-            'session_id': session_id,
-            'user_message': data.message,
-            'ai_response': response,
-            'created_at': datetime.now(timezone.utc).isoformat()
-        })
-        
-        return ChatResponse(response=response, session_id=session_id)
-    except Exception as e:
-        logger.error(f"Chat error: {e}")
-        return ChatResponse(
-            response="Maaf, saya sedang mengalami gangguan. Silakan hubungi kami via WhatsApp: +62 851 9176 9521",
-            session_id=session_id
-        )
+    # Temporary fallback while AI library is being fixed
+    return ChatResponse(
+        response="Maaf, fitur AI sedang dalam pemeliharaan. Silakan hubungi kami via WhatsApp: +62 851 9176 9521",
+        session_id=session_id
+    )
 
 # ============ Categories ============
 
