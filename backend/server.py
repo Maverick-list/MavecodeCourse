@@ -17,10 +17,21 @@ import bcrypt
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# MongoDB connection - CRASH PROOF WRAPPER
+try:
+    mongo_url = os.environ.get('MONGO_URL')
+    db_name = os.environ.get('DB_NAME', 'mavecode_db') # Default to avoid crash
+    
+    if not mongo_url:
+        print("WARNING: MONGO_URL is missing! App will start in Maintenance Mode.")
+        db = None
+    else:
+        client = AsyncIOMotorClient(mongo_url)
+        db = client[db_name]
+        print(f"SUCCESS: Connected to DB {db_name}")
+except Exception as e:
+    print(f"CRITICAL DB ERROR: {e}")
+    db = None
 
 # JWT config
 JWT_SECRET = os.environ.get('JWT_SECRET', 'mavecode-secret-key')
