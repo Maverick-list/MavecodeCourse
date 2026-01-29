@@ -1,4 +1,4 @@
-# Runtime dependencies
+# Runtime dependencies - Build Timestamp: 2026-01-30_0655
 aiohappyeyeballs==2.6.1
 aiohttp==3.13.3
 aiosignal==1.4.0

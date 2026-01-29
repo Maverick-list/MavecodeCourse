@@ -5,7 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
-print("--- STARTING JAVACODE BACKEND (CLEAN BUILD) ---")
+print("--- STARTING JAVACODE BACKEND (CLEAN BUILD 2026-01-30_0655) ---")
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
