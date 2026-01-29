@@ -4,7 +4,7 @@
         "builder": "NIXPACKS"
     },
     "deploy": {
-        "startCommand": "gunicorn -w 4 -k uvicorn.workers.UvicornWorker server:app --bind 0.0.0.0:$PORT",
+        "startCommand": "uvicorn server:app --host 0.0.0.0 --port $PORT",
         "healthcheckPath": "/api/stats",
         "healthcheckTimeout": 100,
         "restartPolicyType": "ON_FAILURE",
