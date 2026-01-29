@@ -6,38 +6,54 @@ import axios from 'axios';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import ArticleCard from '../components/ArticleCard';
+import { useFirebaseData } from '../context/FirebaseContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const ArticlesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Firebase real-time data
+  const {
+    articles: firebaseArticles,
+    isFirebaseConnected,
+    loading: firebaseLoading
+  } = useFirebaseData();
+
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
+
   const categoryFilter = searchParams.get('category') || '';
 
   const categories = ['tips', 'teknologi', 'karir', 'tutorial'];
 
   useEffect(() => {
-    const fetchArticles = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get(`${API}/articles`, {
-          params: { category: categoryFilter || undefined }
-        });
-        setArticles(res.data);
-      } catch (err) {
-        console.error('Error fetching articles:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchArticles();
-  }, [categoryFilter]);
+    if (isFirebaseConnected) {
+      // Use Firebase real-time data
+      setArticles(firebaseArticles);
+      setLoading(false);
+    } else if (!firebaseLoading) {
+      // Fallback to API
+      const fetchArticles = async () => {
+        setLoading(true);
+        try {
+          const res = await axios.get(`${API}/articles`, {
+            params: { category: categoryFilter || undefined }
+          });
+          setArticles(res.data);
+        } catch (err) {
+          console.error('Error fetching articles:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchArticles();
+    }
+  }, [isFirebaseConnected, firebaseLoading, firebaseArticles, categoryFilter]);
 
   const filteredArticles = articles.filter(article => {
-    return !search || 
+    return !search ||
       article.title.toLowerCase().includes(search.toLowerCase()) ||
       article.excerpt?.toLowerCase().includes(search.toLowerCase());
   });

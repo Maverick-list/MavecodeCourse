@@ -14,45 +14,63 @@ import {
   SelectValue,
 } from '../components/ui/select';
 import CourseCard from '../components/CourseCard';
+import { useFirebaseData } from '../context/FirebaseContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const CoursesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Firebase real-time data
+  const {
+    courses: firebaseCourses,
+    categories: firebaseCategories,
+    isFirebaseConnected,
+    loading: firebaseLoading
+  } = useFirebaseData();
+
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
+
   const categoryFilter = searchParams.get('category') || '';
   const levelFilter = searchParams.get('level') || '';
   const priceFilter = searchParams.get('price') || '';
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [coursesRes, categoriesRes] = await Promise.all([
-          axios.get(`${API}/courses`, { params: { category: categoryFilter || undefined } }),
-          axios.get(`${API}/categories`)
-        ]);
-        setCourses(coursesRes.data);
-        setCategories(categoriesRes.data);
-      } catch (err) {
-        console.error('Error fetching courses:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [categoryFilter]);
+    if (isFirebaseConnected) {
+      // Use Firebase real-time data
+      setCourses(firebaseCourses);
+      setCategories(firebaseCategories);
+      setLoading(false);
+    } else if (!firebaseLoading) {
+      // Fallback to API
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          const [coursesRes, categoriesRes] = await Promise.all([
+            axios.get(`${API}/courses`, { params: { category: categoryFilter || undefined } }),
+            axios.get(`${API}/categories`)
+          ]);
+          setCourses(coursesRes.data);
+          setCategories(categoriesRes.data);
+        } catch (err) {
+          console.error('Error fetching courses:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
+    }
+  }, [isFirebaseConnected, firebaseLoading, firebaseCourses, firebaseCategories, categoryFilter]);
 
   const filteredCourses = courses.filter(course => {
-    const matchesSearch = !search || 
+    const matchesSearch = !search ||
       course.title.toLowerCase().includes(search.toLowerCase()) ||
       course.description.toLowerCase().includes(search.toLowerCase());
     const matchesLevel = !levelFilter || course.level === levelFilter;
-    const matchesPrice = !priceFilter || 
+    const matchesPrice = !priceFilter ||
       (priceFilter === 'free' && course.is_free) ||
       (priceFilter === 'paid' && !course.is_free);
     return matchesSearch && matchesLevel && matchesPrice;

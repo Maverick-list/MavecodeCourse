@@ -6,28 +6,61 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../context/AppContext';
+import { useFirebaseData } from '../context/FirebaseContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const MENTOR_IMAGE = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/0hxoi5k4_53B2736F-666E-4CE5-8AB8-72D901786EB2.JPG";
 
 export const LiveClassPage = () => {
   const { user, token } = useAuth();
+
+  // Firebase real-time data
+  const {
+    liveSessions: firebaseSessions,
+    mentors: firebaseMentors,
+    isFirebaseConnected,
+    loading: firebaseLoading
+  } = useFirebaseData();
+
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        const res = await axios.get(`${API}/live-classes`);
-        setClasses(res.data);
-      } catch (err) {
-        console.error('Error fetching live classes:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchClasses();
-  }, []);
+    if (isFirebaseConnected) {
+      // Transform Firebase sessions to match expected format
+      const transformedSessions = firebaseSessions.map(session => ({
+        id: session.id,
+        title: session.title,
+        description: session.description,
+        scheduled_at: session.scheduledAt instanceof Date
+          ? session.scheduledAt.toISOString()
+          : session.scheduledAt?.seconds
+            ? new Date(session.scheduledAt.seconds * 1000).toISOString()
+            : session.scheduledAt,
+        duration_minutes: session.durationMinutes || 60,
+        max_participants: session.maxParticipants || 100,
+        participants_count: session.participantsCount || 0,
+        meeting_url: session.meetingUrl,
+        instructor: firebaseMentors.find(m => m.id === session.mentorId)?.name || 'Firza Ilmi',
+        status: session.status
+      }));
+      setClasses(transformedSessions);
+      setLoading(false);
+    } else if (!firebaseLoading) {
+      // Fallback to API
+      const fetchClasses = async () => {
+        try {
+          const res = await axios.get(`${API}/live-classes`);
+          setClasses(res.data);
+        } catch (err) {
+          console.error('Error fetching live classes:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchClasses();
+    }
+  }, [isFirebaseConnected, firebaseLoading, firebaseSessions, firebaseMentors]);
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('id-ID', {
@@ -45,13 +78,21 @@ export const LiveClassPage = () => {
     });
   };
 
-  const joinClass = async (classId) => {
+  const joinClass = async (classItem) => {
     if (!user) {
       window.location.href = '/login';
       return;
     }
+
+    // If we have a meeting URL from Firebase, open it directly
+    if (classItem.meeting_url) {
+      window.open(classItem.meeting_url, '_blank');
+      return;
+    }
+
+    // Otherwise try API
     try {
-      const res = await axios.post(`${API}/live-classes/${classId}/join`, {}, {
+      const res = await axios.post(`${API}/live-classes/${classItem.id}/join`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.meeting_url) {
@@ -62,8 +103,15 @@ export const LiveClassPage = () => {
     }
   };
 
-  const upcomingClasses = classes.filter(c => new Date(c.scheduled_at) > new Date());
-  const pastClasses = classes.filter(c => new Date(c.scheduled_at) <= new Date());
+  const upcomingClasses = classes.filter(c => {
+    const scheduledDate = new Date(c.scheduled_at);
+    return scheduledDate > new Date() && (c.status === 'scheduled' || c.status === 'live');
+  });
+
+  const pastClasses = classes.filter(c => {
+    const scheduledDate = new Date(c.scheduled_at);
+    return scheduledDate <= new Date() || c.status === 'completed';
+  });
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -83,7 +131,7 @@ export const LiveClassPage = () => {
         {/* Upcoming Classes */}
         <section className="mb-16">
           <h2 className="font-heading font-bold text-2xl mb-6">Jadwal Mendatang</h2>
-          
+
           {loading ? (
             <div className="grid md:grid-cols-2 gap-6">
               {[...Array(2)].map((_, i) => (
@@ -140,7 +188,7 @@ export const LiveClassPage = () => {
                     {/* Instructor */}
                     <div className="flex items-center justify-between pt-4 border-t border-border">
                       <div className="flex items-center gap-3">
-                        <img 
+                        <img
                           src={MENTOR_IMAGE}
                           alt={liveClass.instructor}
                           className="w-10 h-10 rounded-full object-cover"
@@ -150,12 +198,12 @@ export const LiveClassPage = () => {
                           <p className="text-xs text-muted-foreground">Instructor</p>
                         </div>
                       </div>
-                      <Button 
-                        onClick={() => joinClass(liveClass.id)}
+                      <Button
+                        onClick={() => joinClass(liveClass)}
                         className="bg-primary hover:bg-primary/90 rounded-full"
                         data-testid={`join-class-${liveClass.id}`}
                       >
-                        Daftar
+                        {liveClass.status === 'live' ? 'Gabung Sekarang' : 'Daftar'}
                       </Button>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { 
+import {
   ArrowRight, Play, Users, BookOpen, Award, Sparkles,
   Code, Globe, Smartphone, Server, BarChart3, Cloud
 } from 'lucide-react';
@@ -9,6 +9,7 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import CourseCard from '../components/CourseCard';
 import ArticleCard from '../components/ArticleCard';
+import { useFirebaseData } from '../context/FirebaseContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const MENTOR_IMAGE = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/0hxoi5k4_53B2736F-666E-4CE5-8AB8-72D901786EB2.JPG";
@@ -37,6 +38,19 @@ const fadeUp = {
 };
 
 export const LandingPage = () => {
+  // Firebase real-time data
+  const {
+    hero: firebaseHero,
+    courses: firebaseCourses,
+    articles: firebaseArticles,
+    categories: firebaseCategories,
+    mentors: firebaseMentors,
+    stats: firebaseStats,
+    isFirebaseConnected,
+    loading: firebaseLoading
+  } = useFirebaseData();
+
+  // Local state (fallback to API)
   const [stats, setStats] = useState({ courses: 50, students: 1000, articles: 100, mentors: 5 });
   const [courses, setCourses] = useState([]);
   const [articles, setArticles] = useState([]);
@@ -46,36 +60,68 @@ export const LandingPage = () => {
     subtitle: 'Belajar coding dari nol hingga mahir bersama mentor berpengalaman. Dapatkan skill yang dibutuhkan industri teknologi.',
     cta_text: 'Mulai Belajar Coding'
   });
+  const [mentor, setMentor] = useState(null);
 
+  // Use Firebase data when available, otherwise fetch from API
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [statsRes, coursesRes, articlesRes, categoriesRes, heroRes] = await Promise.all([
-          axios.get(`${API}/stats`),
-          axios.get(`${API}/courses`),
-          axios.get(`${API}/articles`),
-          axios.get(`${API}/categories`),
-          axios.get(`${API}/hero`)
-        ]);
-        setStats(statsRes.data);
-        setCourses(coursesRes.data.slice(0, 6));
-        setArticles(articlesRes.data.slice(0, 3));
-        setCategories(categoriesRes.data);
-        setHero(heroRes.data);
-      } catch (err) {
-        console.error('Error fetching data:', err);
+    if (isFirebaseConnected) {
+      // Use Firebase real-time data
+      setHero(firebaseHero);
+      setCourses(firebaseCourses.slice(0, 6));
+      setArticles(firebaseArticles.slice(0, 3));
+      setCategories(firebaseCategories);
+      setStats(firebaseStats);
+      if (firebaseMentors.length > 0) {
+        setMentor(firebaseMentors[0]);
       }
-    };
-    fetchData();
-  }, []);
+    } else if (!firebaseLoading) {
+      // Fallback to API
+      const fetchData = async () => {
+        try {
+          const [statsRes, coursesRes, articlesRes, categoriesRes, heroRes] = await Promise.all([
+            axios.get(`${API}/stats`).catch(() => ({ data: stats })),
+            axios.get(`${API}/courses`).catch(() => ({ data: [] })),
+            axios.get(`${API}/articles`).catch(() => ({ data: [] })),
+            axios.get(`${API}/categories`).catch(() => ({ data: [] })),
+            axios.get(`${API}/hero`).catch(() => ({ data: hero }))
+          ]);
+          setStats(statsRes.data);
+          setCourses(coursesRes.data.slice(0, 6));
+          setArticles(articlesRes.data.slice(0, 3));
+          setCategories(categoriesRes.data);
+          setHero(heroRes.data);
+        } catch (err) {
+          console.error('Error fetching data:', err);
+        }
+      };
+      fetchData();
+    }
+  }, [isFirebaseConnected, firebaseLoading, firebaseHero, firebaseCourses, firebaseArticles, firebaseCategories, firebaseStats, firebaseMentors]);
+
+  // Get lead mentor data
+  const leadMentor = mentor || {
+    name: 'Firza Ilmi',
+    title: 'Lead Mentor',
+    bio: 'Full-Stack Developer dengan pengalaman lebih dari 5 tahun di industri teknologi. Passionate dalam berbagi ilmu dan membantu developer pemula mencapai potensi terbaik mereka.',
+    profileImage: MENTOR_IMAGE,
+    expertise: ['Senior Software Engineer', '500+ siswa telah dilatih', 'Expert di React, Node.js, Python', 'Active open source contributor']
+  };
 
   return (
     <div className="min-h-screen">
+      {/* Firebase Connection Indicator (for development) */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className={`fixed bottom-4 right-4 z-50 px-3 py-1 rounded-full text-xs font-medium ${isFirebaseConnected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'
+          }`}>
+          {isFirebaseConnected ? '🔥 Firebase Connected' : '📡 Using API Fallback'}
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0">
-          <div 
+          <div
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url(${hero.background_image || HERO_BG})` }}
           />
@@ -107,12 +153,12 @@ export const LandingPage = () => {
             <motion.div variants={fadeUp} className="mb-6">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-medium">
                 <Sparkles className="w-4 h-4" />
-                Platform Belajar Coding #1 Indonesia
+                {hero.badge_text || 'Platform Belajar Coding #1 Indonesia'}
               </span>
             </motion.div>
 
             {/* Headline */}
-            <motion.h1 
+            <motion.h1
               variants={fadeUp}
               className="font-heading font-bold text-4xl sm:text-5xl lg:text-6xl text-white mb-6 leading-tight"
             >
@@ -122,7 +168,7 @@ export const LandingPage = () => {
             </motion.h1>
 
             {/* Subtitle */}
-            <motion.p 
+            <motion.p
               variants={fadeUp}
               className="text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl mx-auto"
             >
@@ -131,7 +177,7 @@ export const LandingPage = () => {
 
             {/* CTA Buttons */}
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button 
+              <Button
                 asChild
                 size="lg"
                 className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg glow-primary"
@@ -142,9 +188,9 @@ export const LandingPage = () => {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
-              <Button 
+              <Button
                 asChild
-                variant="outline" 
+                variant="outline"
                 size="lg"
                 className="rounded-full px-8 py-6 text-lg border-white/20 text-white hover:bg-white/10"
                 data-testid="hero-demo"
@@ -157,7 +203,7 @@ export const LandingPage = () => {
             </motion.div>
 
             {/* Stats */}
-            <motion.div 
+            <motion.div
               variants={fadeUp}
               className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 pt-16 border-t border-white/10"
             >
@@ -178,13 +224,13 @@ export const LandingPage = () => {
         </div>
 
         {/* Scroll Indicator */}
-        <motion.div 
+        <motion.div
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
           className="absolute bottom-8 left-1/2 -translate-x-1/2"
         >
           <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
-            <motion.div 
+            <motion.div
               animate={{ y: [0, 12, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
               className="w-1.5 h-1.5 bg-white rounded-full"
@@ -213,9 +259,9 @@ export const LandingPage = () => {
                   viewport={{ once: true }}
                   className="relative z-10 rounded-3xl overflow-hidden"
                 >
-                  <img 
-                    src={MENTOR_IMAGE} 
-                    alt="Firza Ilmi - Mentor"
+                  <img
+                    src={leadMentor.profileImage || MENTOR_IMAGE}
+                    alt={`${leadMentor.name} - Mentor`}
                     className="w-full h-full object-cover"
                   />
                 </motion.div>
@@ -231,21 +277,20 @@ export const LandingPage = () => {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <span className="text-primary font-medium text-sm uppercase tracking-wider">Lead Mentor</span>
+              <span className="text-primary font-medium text-sm uppercase tracking-wider">{leadMentor.title || 'Lead Mentor'}</span>
               <h2 className="font-heading font-bold text-4xl lg:text-5xl text-white mt-2 mb-6">
-                Firza Ilmi
+                {leadMentor.name}
               </h2>
               <p className="text-slate-300 text-lg mb-6">
-                Full-Stack Developer dengan pengalaman lebih dari 5 tahun di industri teknologi. 
-                Passionate dalam berbagi ilmu dan membantu developer pemula mencapai potensi terbaik mereka.
+                {leadMentor.bio}
               </p>
               <ul className="space-y-3 mb-8">
-                {[
+                {(Array.isArray(leadMentor.expertise) ? leadMentor.expertise : [
                   'Senior Software Engineer',
                   '500+ siswa telah dilatih',
                   'Expert di React, Node.js, Python',
                   'Active open source contributor'
-                ].map((item, i) => (
+                ]).map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-slate-300">
                     <div className="w-2 h-2 rounded-full bg-primary" />
                     {item}
@@ -382,11 +427,11 @@ export const LandingPage = () => {
               Siap Memulai Perjalanan Codingmu?
             </h2>
             <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-              Bergabung dengan ribuan developer lainnya dan mulai belajar coding hari ini. 
+              Bergabung dengan ribuan developer lainnya dan mulai belajar coding hari ini.
               Gratis untuk memulai!
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button 
+              <Button
                 asChild
                 size="lg"
                 className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 glow-primary"
@@ -396,9 +441,9 @@ export const LandingPage = () => {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </Button>
-              <Button 
+              <Button
                 asChild
-                variant="outline" 
+                variant="outline"
                 size="lg"
                 className="rounded-full px-8"
               >

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { AuthProvider, ThemeProvider, useAuth } from './context/AppContext';
+import { FirebaseProvider } from './context/FirebaseContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Chatbot from './components/Chatbot';
@@ -55,11 +56,11 @@ const AppContent = () => {
         <Route path="/faq" element={<MainLayout><FAQPage /></MainLayout>} />
         <Route path="/live" element={<MainLayout><LiveClassPage /></MainLayout>} />
         <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
-        
+
         {/* Auth Routes */}
         <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
         <Route path="/register" element={<MainLayout><RegisterPage /></MainLayout>} />
-        
+
         {/* Protected User Dashboard */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
@@ -71,7 +72,7 @@ const AppContent = () => {
             <MainLayout><DashboardPage /></MainLayout>
           </ProtectedRoute>
         } />
-        
+
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin" element={<AdminLayout />}>
@@ -82,11 +83,11 @@ const AppContent = () => {
           <Route path="faq" element={<AdminDashboard />} />
           <Route path="settings" element={<AdminDashboard />} />
         </Route>
-        
+
         {/* Static Pages */}
         <Route path="/terms" element={<MainLayout><StaticPage title="Syarat & Ketentuan" /></MainLayout>} />
         <Route path="/privacy" element={<MainLayout><StaticPage title="Kebijakan Privasi" /></MainLayout>} />
-        
+
         {/* 404 */}
         <Route path="*" element={<MainLayout><NotFoundPage /></MainLayout>} />
       </Routes>
@@ -118,8 +119,8 @@ const NotFoundPage = () => (
       <p className="text-muted-foreground mb-8">
         Maaf, halaman yang Anda cari tidak tersedia.
       </p>
-      <a 
-        href="/" 
+      <a
+        href="/"
         className="inline-flex items-center justify-center px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
       >
         Kembali ke Beranda
@@ -133,7 +134,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <FirebaseProvider>
+          <AppContent />
+        </FirebaseProvider>
       </AuthProvider>
     </ThemeProvider>
   );
