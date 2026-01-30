@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://mavecode.id/</loc>
+    <loc>https://mavecode-course-l3jsbt57n-firza-miftahul-ilmis-projects.vercel.app/</loc>
     <lastmod>2024-01-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://mavecode.id/courses</loc>
+    <loc>https://mavecode-course-l3jsbt57n-firza-miftahul-ilmis-projects.vercel.app/courses</loc>
     <lastmod>2024-01-30</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://mavecode.id/articles</loc>
+    <loc>https://mavecode-course-l3jsbt57n-firza-miftahul-ilmis-projects.vercel.app/articles</loc>
     <lastmod>2024-01-30</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://mavecode.id/about</loc>
+    <loc>https://mavecode-course-l3jsbt57n-firza-miftahul-ilmis-projects.vercel.app/about</loc>
     <lastmod>2024-01-30</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
