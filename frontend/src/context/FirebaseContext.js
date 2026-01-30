@@ -36,7 +36,7 @@ const DEFAULT_HERO = {
     title: 'Mulai Karir Codingmu Sekarang',
     subtitle: 'Belajar coding dari nol hingga mahir bersama mentor berpengalaman. Dapatkan skill yang dibutuhkan industri teknologi.',
     cta_text: 'Mulai Belajar Coding',
-    badge_text: 'Platform Belajar Coding #1 Indonesia',
+    badge_text: 'Coding Course Academic for Developer',
     background_image: 'https://images.unsplash.com/photo-1649451844813-3130d6f42f8a?crop=entropy&cs=srgb&fm=jpg&q=85'
 };
 

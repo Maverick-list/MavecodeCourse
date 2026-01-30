@@ -64,39 +64,42 @@ export const LandingPage = () => {
 
   // Use Firebase data when available, otherwise fetch from API
   useEffect(() => {
-    if (isFirebaseConnected) {
-      // Use Firebase real-time data
-      setHero(firebaseHero);
-      setCourses(firebaseCourses.slice(0, 6));
-      setArticles(firebaseArticles.slice(0, 3));
-      setCategories(firebaseCategories);
-      setStats(firebaseStats);
-      if (firebaseMentors.length > 0) {
-        setMentor(firebaseMentors[0]);
+    const fetchFromAPI = async () => {
+      try {
+        const [statsRes, coursesRes, articlesRes, categoriesRes, heroRes] = await Promise.all([
+          axios.get(`${API}/stats`).catch(() => ({ data: stats })),
+          axios.get(`${API}/courses`).catch(() => ({ data: [] })),
+          axios.get(`${API}/articles`).catch(() => ({ data: [] })),
+          axios.get(`${API}/categories`).catch(() => ({ data: [] })),
+          axios.get(`${API}/hero`).catch(() => ({ data: hero }))
+        ]);
+        setStats(statsRes.data);
+        setCourses(coursesRes.data.slice(0, 6));
+        setArticles(articlesRes.data.slice(0, 3));
+        setCategories(categoriesRes.data);
+        setHero(heroRes.data);
+      } catch (err) {
+        console.error('Error fetching data:', err);
       }
-    } else if (!firebaseLoading) {
-      // Fallback to API
-      const fetchData = async () => {
-        try {
-          const [statsRes, coursesRes, articlesRes, categoriesRes, heroRes] = await Promise.all([
-            axios.get(`${API}/stats`).catch(() => ({ data: stats })),
-            axios.get(`${API}/courses`).catch(() => ({ data: [] })),
-            axios.get(`${API}/articles`).catch(() => ({ data: [] })),
-            axios.get(`${API}/categories`).catch(() => ({ data: [] })),
-            axios.get(`${API}/hero`).catch(() => ({ data: hero }))
-          ]);
-          setStats(statsRes.data);
-          setCourses(coursesRes.data.slice(0, 6));
-          setArticles(articlesRes.data.slice(0, 3));
-          setCategories(categoriesRes.data);
-          setHero(heroRes.data);
-        } catch (err) {
-          console.error('Error fetching data:', err);
+    };
+
+    if (!firebaseLoading) {
+      // Use Firebase data if connected AND has courses, otherwise fallback to API
+      if (isFirebaseConnected && firebaseCourses.length > 0) {
+        setHero(firebaseHero);
+        setCourses(firebaseCourses.slice(0, 6));
+        setArticles(firebaseArticles.slice(0, 3));
+        setCategories(firebaseCategories.length > 0 ? firebaseCategories : categories);
+        setStats(firebaseStats);
+        if (firebaseMentors.length > 0) {
+          setMentor(firebaseMentors[0]);
         }
-      };
-      fetchData();
+      } else {
+        // Fallback to backend API
+        fetchFromAPI();
+      }
     }
-  }, [isFirebaseConnected, firebaseLoading, firebaseHero, firebaseCourses, firebaseArticles, firebaseCategories, firebaseStats, firebaseMentors, hero, stats]);
+  }, [isFirebaseConnected, firebaseLoading, firebaseHero, firebaseCourses, firebaseArticles, firebaseCategories, firebaseStats, firebaseMentors]);
 
   // Get lead mentor data
   const leadMentor = mentor || {

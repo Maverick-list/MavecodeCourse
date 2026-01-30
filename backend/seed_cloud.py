@@ -12,8 +12,14 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import uuid
 
+import certifi
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+import dns.resolver
+
+# Configure DNS resolver to use Cloudflare and Google DNS
+dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
+dns.resolver.default_resolver.nameservers = ['1.1.1.1', '8.8.8.8']
 
 # Load environment variables
 ROOT_DIR = Path(__file__).parent
@@ -31,8 +37,48 @@ async def seed_database():
     """Seed the MongoDB Atlas database with initial data"""
     print(f"🔗 Connecting to MongoDB Atlas...")
     print(f"   Database: {DB_NAME}")
-    
-    client = AsyncIOMotorClient(MONGO_URL)
+
+    final_url = MONGO_URL
+    if MONGO_URL.startswith("mongodb+srv://"):
+        try:
+            print("🔄 Attempting DoH (DNS over HTTPS) resolution for SRV...")
+            import requests
+            
+            # Parse host from URI
+            credentials_part, rest = MONGO_URL.split('://')[1].rsplit('@', 1)
+            if '/' in rest:
+                host, params = rest.split('/', 1)
+                params = '/' + params
+            else:
+                host = rest
+                params = '/'
+            
+            # Request Google DoH
+            doh_url = f"https://dns.google/resolve?name=_mongodb._tcp.{host}&type=SRV"
+            print(f"   Querying: {doh_url}")
+            resp = requests.get(doh_url, timeout=10)
+            data = resp.json()
+            
+            if 'Answer' not in data:
+                raise Exception(f"No SRV records found in DoH response: {data}")
+                
+            hosts = []
+            for ans in data['Answer']:
+                # Format: priority weight port target
+                # Example: "0 0 27017 cluster0-shard-00-00.uviruhc.mongodb.net."
+                parts = ans['data'].split()
+                port = parts[2]
+                target = parts[3].rstrip('.')
+                hosts.append(f"{target}:{port}")
+            
+            # Reconstruct URI
+            check_sep = '&' if '?' in params else '?'
+            final_url = f"mongodb://{credentials_part}@{','.join(hosts)}{params}{check_sep}ssl=true&authSource=admin"
+            print(f"✅ Resolved via DoH: {final_url.split('@')[1].split('/')[0]}...") 
+        except Exception as e:
+            print(f"⚠️ DoH Resolution failed ({e}), trying default...")
+
+    client = AsyncIOMotorClient(final_url, tlsCAFile=certifi.where())
     db = client[DB_NAME]
     
     now = datetime.now(timezone.utc).isoformat()

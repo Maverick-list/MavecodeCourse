@@ -39,29 +39,32 @@ export const CoursesPage = () => {
   const priceFilter = searchParams.get('price') || '';
 
   useEffect(() => {
-    if (isFirebaseConnected) {
-      // Use Firebase real-time data
-      setCourses(firebaseCourses);
-      setCategories(firebaseCategories);
-      setLoading(false);
-    } else if (!firebaseLoading) {
-      // Fallback to API
-      const fetchData = async () => {
-        setLoading(true);
-        try {
-          const [coursesRes, categoriesRes] = await Promise.all([
-            axios.get(`${API}/courses`, { params: { category: categoryFilter || undefined } }),
-            axios.get(`${API}/categories`)
-          ]);
-          setCourses(coursesRes.data);
-          setCategories(categoriesRes.data);
-        } catch (err) {
-          console.error('Error fetching courses:', err);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchData();
+    const fetchFromAPI = async () => {
+      setLoading(true);
+      try {
+        const [coursesRes, categoriesRes] = await Promise.all([
+          axios.get(`${API}/courses`, { params: { category: categoryFilter || undefined } }),
+          axios.get(`${API}/categories`)
+        ]);
+        setCourses(coursesRes.data);
+        setCategories(categoriesRes.data);
+      } catch (err) {
+        console.error('Error fetching courses:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!firebaseLoading) {
+      // If Firebase has courses, use them; otherwise fallback to API
+      if (isFirebaseConnected && firebaseCourses.length > 0) {
+        setCourses(firebaseCourses);
+        setCategories(firebaseCategories.length > 0 ? firebaseCategories : categories);
+        setLoading(false);
+      } else {
+        // Fallback to backend API
+        fetchFromAPI();
+      }
     }
   }, [isFirebaseConnected, firebaseLoading, firebaseCourses, firebaseCategories, categoryFilter]);
 
