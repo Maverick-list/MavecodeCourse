@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, BookOpen, FileText, Video, Users, 
+import {
+  LayoutDashboard, BookOpen, FileText, Video, Users,
   Settings, LogOut, Plus, Pencil, Trash2, Eye, Menu, X
 } from 'lucide-react';
 import axios from 'axios';
@@ -92,7 +92,10 @@ export const AdminLayout = () => {
           <Link to="/admin" className="flex items-center gap-3 mb-8">
             <img src={LOGO_URL} alt="Mavecode" className="h-10 w-10 rounded-xl" />
             <div>
-              <span className="font-heading font-bold block">Mavecode</span>
+              <span className="font-heading text-xl relative block" style={{ fontWeight: 900 }}>
+                <span className="absolute inset-0 blur-md opacity-50 animate-pulse"><span style={{ color: '#1e3a5f' }}>MAVE</span><span style={{ color: '#f97316' }}>CODE</span></span>
+                <span className="relative"><span style={{ color: '#1e3a5f' }}>MAVE</span><span style={{ color: '#f97316' }}>CODE</span></span>
+              </span>
               <span className="text-xs text-muted-foreground">Admin Panel</span>
             </div>
           </Link>
@@ -103,11 +106,10 @@ export const AdminLayout = () => {
                 key={link.href}
                 to={link.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
-                  location.pathname === link.href 
-                    ? 'bg-primary text-white' 
-                    : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${location.pathname === link.href
+                  ? 'bg-primary text-white'
+                  : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 <link.icon className="w-5 h-5" />
                 {link.name}
@@ -117,14 +119,14 @@ export const AdminLayout = () => {
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-border">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
             <Eye className="w-5 h-5" />
             Lihat Website
           </Link>
-          <button 
+          <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-destructive/10 text-destructive w-full transition-colors"
           >
@@ -141,7 +143,7 @@ export const AdminLayout = () => {
 
       {/* Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -217,8 +219,8 @@ export const AdminLoginPage = () => {
               />
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={loading}
               className="w-full bg-primary hover:bg-primary/90 rounded-full py-6"
               data-testid="admin-submit"
@@ -247,7 +249,7 @@ export const AdminDashboard = () => {
       try {
         const res = await axios.get(`${API}/stats`);
         setStats(res.data);
-      } catch (err) {}
+      } catch (err) { }
     };
     fetchStats();
   }, []);
@@ -306,7 +308,7 @@ export const AdminDashboard = () => {
           <p className="text-muted-foreground text-sm mb-4">
             Generate sample data untuk testing
           </p>
-          <Button 
+          <Button
             onClick={async () => {
               try {
                 await axios.post(`${API}/seed`);
@@ -332,8 +334,8 @@ export const AdminCoursesPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
   const [formData, setFormData] = useState({
-    title: '', description: '', thumbnail: '', price: 0, 
-    is_free: true, category: 'web', level: 'beginner', 
+    title: '', description: '', thumbnail: '', price: 0,
+    is_free: true, category: 'web', level: 'beginner',
     duration_hours: 0, instructor: 'Firza Ilmi'
   });
 
@@ -341,7 +343,7 @@ export const AdminCoursesPage = () => {
     try {
       const res = await axios.get(`${API}/courses`);
       setCourses(res.data);
-    } catch (err) {}
+    } catch (err) { }
     setLoading(false);
   };
 
@@ -416,16 +418,16 @@ export const AdminCoursesPage = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label>Judul</Label>
-                <Input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} required />
+                <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
               </div>
               <div className="space-y-2">
                 <Label>Deskripsi</Label>
-                <Textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={3} required />
+                <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} required />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Kategori</Label>
-                  <Select value={formData.category} onValueChange={(v) => setFormData({...formData, category: v})}>
+                  <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="web">Web Development</SelectItem>
@@ -439,7 +441,7 @@ export const AdminCoursesPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label>Level</Label>
-                  <Select value={formData.level} onValueChange={(v) => setFormData({...formData, level: v})}>
+                  <Select value={formData.level} onValueChange={(v) => setFormData({ ...formData, level: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="beginner">Pemula</SelectItem>
@@ -452,20 +454,20 @@ export const AdminCoursesPage = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Durasi (jam)</Label>
-                  <Input type="number" value={formData.duration_hours} onChange={(e) => setFormData({...formData, duration_hours: parseInt(e.target.value) || 0})} />
+                  <Input type="number" value={formData.duration_hours} onChange={(e) => setFormData({ ...formData, duration_hours: parseInt(e.target.value) || 0 })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Harga (Rp)</Label>
-                  <Input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})} disabled={formData.is_free} />
+                  <Input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })} disabled={formData.is_free} />
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Switch checked={formData.is_free} onCheckedChange={(v) => setFormData({...formData, is_free: v})} />
+                <Switch checked={formData.is_free} onCheckedChange={(v) => setFormData({ ...formData, is_free: v })} />
                 <Label>Gratis</Label>
               </div>
               <div className="space-y-2">
                 <Label>Thumbnail URL</Label>
-                <Input value={formData.thumbnail} onChange={(e) => setFormData({...formData, thumbnail: e.target.value})} placeholder="https://..." />
+                <Input value={formData.thumbnail} onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })} placeholder="https://..." />
               </div>
               <DialogFooter>
                 <Button type="submit" className="w-full">{editingCourse ? 'Update' : 'Simpan'}</Button>

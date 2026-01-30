@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Play, Users, BookOpen, Award, Sparkles,
-  Code, Globe, Smartphone, Server, BarChart3, Cloud
+  Code, Globe, Smartphone, Server, BarChart3, Cloud,
+  Terminal, Shield, Cpu
 } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
@@ -62,6 +63,28 @@ export const LandingPage = () => {
   });
   const [mentor, setMentor] = useState(null);
 
+  // Scroll Reveal & Typewriter refs
+  const mentorRef = useRef(null);
+  const isMentorInView = useInView(mentorRef, { once: true, margin: "-100px" });
+  const [typewriterText, setTypewriterText] = useState("");
+  const fullBio = "Full-Stack Developer dengan pengalaman lebih dari 5 tahun di industri teknologi. Passionate dalam berbagi ilmu dan membantu developer pemula mencapai potensi terbaik mereka.";
+
+  // Typewriter effect
+  useEffect(() => {
+    if (isMentorInView) {
+      let i = 0;
+      const timer = setInterval(() => {
+        if (i < fullBio.length) {
+          setTypewriterText((prev) => prev + fullBio.charAt(i));
+          i++;
+        } else {
+          clearInterval(timer);
+        }
+      }, 30); // Speed of typing
+      return () => clearInterval(timer);
+    }
+  }, [isMentorInView]);
+
   // Use Firebase data when available, otherwise fetch from API
   useEffect(() => {
     const fetchFromAPI = async () => {
@@ -111,38 +134,18 @@ export const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Firebase Connection Indicator (for development) */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className={`fixed bottom-4 right-4 z-50 px-3 py-1 rounded-full text-xs font-medium ${isFirebaseConnected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-yellow-500/20 text-yellow-400'
-          }`}>
-          {isFirebaseConnected ? '🔥 Firebase Connected' : '📡 Using API Fallback'}
-        </div>
-      )}
+    <div className="min-h-screen bg-background font-mono relative overflow-hidden selection:bg-primary selection:text-black">
+      {/* Scanlines Overlay */}
+      <div className="scanlines"></div>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${hero.background_image || HERO_BG})` }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-slate-950/95" />
-          <div className="hero-glow absolute inset-0" />
+      <section className="relative pt-20 pb-16 lg:pt-32 lg:pb-24 overflow-hidden">
+        {/* Abstract Background Elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+          <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] animate-pulse-glow" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-accent/10 rounded-full blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
         </div>
-
-        {/* Floating Elements */}
-        <motion.div
-          animate={{ y: [0, -20, 0] }}
-          transition={{ duration: 4, repeat: Infinity }}
-          className="absolute top-1/4 left-10 w-20 h-20 bg-primary/20 rounded-full blur-xl"
-        />
-        <motion.div
-          animate={{ y: [0, 20, 0] }}
-          transition={{ duration: 5, repeat: Infinity }}
-          className="absolute bottom-1/4 right-10 w-32 h-32 bg-accent/20 rounded-full blur-xl"
-        />
 
         {/* Content */}
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
@@ -154,26 +157,27 @@ export const LandingPage = () => {
           >
             {/* Badge */}
             <motion.div variants={fadeUp} className="mb-6">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 border border-primary/30 text-primary text-sm font-medium">
-                <Sparkles className="w-4 h-4" />
-                {hero.badge_text || 'Platform Belajar Coding #1 Indonesia'}
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-none border border-primary/50 bg-primary/10 text-primary text-sm font-mono tracking-wider uppercase backdrop-blur-sm">
+                <Terminal className="w-4 h-4" />
+                Coding Course Academic for Developer
               </span>
             </motion.div>
 
             {/* Headline */}
             <motion.h1
               variants={fadeUp}
-              className="font-heading font-bold text-4xl sm:text-5xl lg:text-6xl text-white mb-6 leading-tight"
+              className="font-heading font-bold text-5xl sm:text-6xl lg:text-7xl text-slate-900 dark:text-white mb-6 leading-tight tracking-wide uppercase"
+              style={{ textShadow: '0 0 20px rgba(0, 255, 255, 0.3)' }}
             >
               {hero.title.split(' ').map((word, i) => (
-                <span key={i} className={i === 2 ? 'text-primary' : ''}>{word} </span>
+                <span key={i} className={i === 2 ? 'text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent animate-gradient' : ''}>{word} </span>
               ))}
             </motion.h1>
 
             {/* Subtitle */}
             <motion.p
               variants={fadeUp}
-              className="text-lg sm:text-xl text-slate-300 mb-8 max-w-2xl mx-auto"
+              className="font-mono text-base sm:text-lg text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed border-l-2 border-accent/50 pl-4 text-left md:text-center md:border-none md:pl-0"
             >
               {hero.subtitle}
             </motion.p>
@@ -183,19 +187,21 @@ export const LandingPage = () => {
               <Button
                 asChild
                 size="lg"
-                className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-lg glow-primary"
+                className="bg-primary hover:bg-primary/80 text-white dark:text-black rounded-none px-8 py-6 text-lg font-heading font-bold tracking-wider uppercase border border-primary shadow-[0_0_20px_rgba(0,255,255,0.4)] hover:shadow-[0_0_30px_rgba(0,255,255,0.6)] transition-all duration-300 relative overflow-hidden group"
                 data-testid="hero-cta"
               >
                 <Link to="/courses">
-                  {hero.cta_text}
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <span className="relative z-10 flex items-center gap-2">
+                    {hero.cta_text} <ArrowRight className="w-5 h-5" />
+                  </span>
+                  <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
                 </Link>
               </Button>
               <Button
                 asChild
                 variant="outline"
                 size="lg"
-                className="rounded-full px-8 py-6 text-lg border-white/20 text-white hover:bg-white/10"
+                className="rounded-none px-8 py-6 text-lg font-heading font-bold tracking-wider uppercase border border-white/20 text-white hover:bg-white/5 hover:border-primary/50 hover:text-primary transition-all duration-300"
                 data-testid="hero-demo"
               >
                 <Link to="/courses">
@@ -204,150 +210,146 @@ export const LandingPage = () => {
                 </Link>
               </Button>
             </motion.div>
-
-            {/* Stats */}
-            <motion.div
-              variants={fadeUp}
-              className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-16 pt-16 border-t border-white/10"
-            >
-              {[
-                { value: `${stats.courses}+`, label: 'Kursus', icon: BookOpen },
-                { value: `${stats.students}+`, label: 'Siswa', icon: Users },
-                { value: `${stats.articles}+`, label: 'Artikel', icon: Award },
-                { value: `${stats.mentors}+`, label: 'Mentor', icon: Sparkles },
-              ].map((stat, i) => (
-                <div key={i} className="text-center">
-                  <stat.icon className="w-6 h-6 text-primary mx-auto mb-2" />
-                  <div className="font-heading font-bold text-3xl text-white">{stat.value}</div>
-                  <div className="text-slate-400 text-sm">{stat.label}</div>
-                </div>
-              ))}
-            </motion.div>
           </motion.div>
         </div>
+      </section>
 
-        {/* Scroll Indicator */}
-        <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
-        >
-          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
-            <motion.div
-              animate={{ y: [0, 12, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="w-1.5 h-1.5 bg-white rounded-full"
-            />
+      {/* Stats Section */}
+      <section className="py-12 border-y border-white/5 bg-white/5 backdrop-blur-sm relative z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              { icon: BookOpen, label: "Kursus", value: `${stats.courses}+`, color: "text-primary dark:text-primary" },
+              { icon: Users, label: "Siswa", value: `${stats.students}+`, color: "text-accent dark:text-accent" },
+              { icon: Award, label: "Artikel", value: `${stats.articles}+`, color: "text-purple-400" },
+              { icon: Sparkles, label: "Mentor", value: `${stats.mentors}+`, color: "text-pink-400" },
+            ].map((stat, index) => (
+              <div key={index} className="flex flex-col items-center text-center group cursor-pointer">
+                <div className={`mb-4 p-3 rounded-none bg-white/5 border border-white/10 group-hover:border-primary/50 group-hover:bg-primary/10 transition-colors duration-300`}>
+                  <stat.icon className={`w-6 h-6 ${stat.color} group-hover:animate-pulse`} />
+                </div>
+                <h3 className="font-heading text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 mb-1">{stat.value}</h3>
+                <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{stat.label}</p>
+              </div>
+            ))}
           </div>
-        </motion.div>
+        </div>
       </section>
 
       {/* Mentor Section */}
-      <section className="py-24 bg-slate-900/50 relative overflow-hidden">
-        <div className="absolute inset-0 hero-glow opacity-50" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Mentor Image */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              <div className="relative aspect-[3/4] max-w-md mx-auto">
-                <motion.div
-                  initial={{ clipPath: 'inset(100% 0 0 0)' }}
-                  whileInView={{ clipPath: 'inset(0% 0 0 0)' }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                  viewport={{ once: true }}
-                  className="relative z-10 rounded-3xl overflow-hidden"
-                >
-                  <img
-                    src={leadMentor.profileImage || MENTOR_IMAGE}
-                    alt={`${leadMentor.name} - Mentor`}
-                    className="w-full h-full object-cover"
-                  />
-                </motion.div>
-                {/* Decorative Elements */}
-                <div className="absolute -bottom-4 -right-4 w-full h-full bg-primary/20 rounded-3xl -z-10" />
-                <div className="absolute -top-4 -left-4 w-24 h-24 bg-accent/30 rounded-full blur-2xl" />
-              </div>
-            </motion.div>
+      {/* Mentor Section */}
+      <section className="py-24 relative overflow-hidden" ref={mentorRef}>
+        <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none" />
 
-            {/* Mentor Info */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+
+            {/* Mentor Image with HUD Border */}
             <motion.div
-              initial={{ opacity: 0, x: 50 }}
+              initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
+              className="lg:w-1/2 relative group"
             >
-              <span className="text-primary font-medium text-sm uppercase tracking-wider">{leadMentor.title || 'Lead Mentor'}</span>
-              <h2 className="font-heading font-bold text-4xl lg:text-5xl text-white mt-2 mb-6">
-                {leadMentor.name}
-              </h2>
-              <p className="text-slate-300 text-lg mb-6">
-                {leadMentor.bio}
-              </p>
-              <ul className="space-y-3 mb-8">
-                {(Array.isArray(leadMentor.expertise) ? leadMentor.expertise : [
-                  'Senior Software Engineer',
-                  '500+ siswa telah dilatih',
-                  'Expert di React, Node.js, Python',
-                  'Active open source contributor'
-                ]).map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-slate-300">
-                    <div className="w-2 h-2 rounded-full bg-primary" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Button asChild className="bg-primary hover:bg-primary/90 rounded-full">
-                <Link to="/courses">
-                  Lihat Kursus dari Mentor
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-              </Button>
+              <div className="relative z-10 hud-border p-2 bg-white/50 dark:bg-black/50 backdrop-blur-sm shadow-xl dark:shadow-none border border-slate-200 dark:border-transparent">
+                <div className="absolute top-4 right-4 text-[10px] font-mono text-primary/70 z-20">Target: ID_MENTOR_01</div>
+                <img
+                  src={leadMentor.profileImage || MENTOR_IMAGE}
+                  alt={leadMentor.name}
+                  className="w-full rounded-sm grayscale group-hover:grayscale-0 transition-all duration-700"
+                />
+                {/* Decorative corner lines */}
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-primary opacity-60" />
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-primary opacity-60" />
+              </div>
+
+              {/* Background decorative square */}
+              <div className="absolute -bottom-6 -right-6 w-full h-full border border-dashed border-slate-300 dark:border-white/10 -z-10" />
             </motion.div>
+
+            {/* Mentor Content */}
+            <div className="lg:w-1/2 space-y-8">
+              <div>
+                <h3 className="font-mono text-primary text-sm tracking-[0.2em] uppercase mb-2 flex items-center gap-2">
+                  <span className="w-8 h-[1px] bg-primary"></span>
+                  {leadMentor.title}
+                </h3>
+                <div className="glitch-wrapper mb-6">
+                  <h2
+                    className="font-heading text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white uppercase glitch hover-glow cursor-default"
+                    data-text={leadMentor.name}
+                  >
+                    {leadMentor.name}
+                  </h2>
+                </div>
+
+                {/* Typewriter Description */}
+                <p className={`font-mono text-lg leading-relaxed transition-all duration-1000 ${isMentorInView ? 'opacity-100' : 'opacity-10'} text-slate-700 dark:text-slate-300`}>
+                  <span className={`reveal-text ${isMentorInView ? 'active' : ''}`}>
+                    {isMentorInView ? typewriterText : ""}
+                  </span>
+                  <span className="typewriter-cursor"></span>
+                </p>
+              </div>
+
+              <div className={`space-y-4 font-mono transition-opacity duration-1000 delay-500 ${isMentorInView ? 'opacity-100' : 'opacity-0'}`}>
+                {(leadMentor.expertise || []).map((item, i) => (
+                  <div key={i} className="flex items-center gap-4 group">
+                    <div className="w-2 h-2 bg-accent group-hover:scale-150 group-hover:shadow-[0_0_8px_#39FF14] transition-all duration-300" />
+                    <span className="text-muted-foreground group-hover:text-accent transition-colors">{item}</span>
+                  </div>
+                ))}
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <Button
+                  className="bg-primary hover:bg-primary/90 text-white dark:text-black font-heading font-bold uppercase tracking-wider rounded-none relative overflow-hidden group px-8"
+                >
+                  <Link to="/courses" className="flex items-center">
+                    <span className="relative z-10">Lihat Kursus dari Mentor</span>
+                    <ArrowRight className="ml-2 w-4 h-4 relative z-10" />
+                  </Link>
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                </Button>
+              </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Categories Section */}
-      <section className="py-24">
+      <section className="py-24 bg-white/5 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="font-heading font-bold text-3xl lg:text-4xl mb-4">Pilih Jalur Belajarmu</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+          <div className="text-center mb-16 max-w-2xl mx-auto">
+            <h2 className="font-heading text-3xl sm:text-4xl text-white mb-4 uppercase tracking-wider">
+              Pilih Jalur Belajarmu
+            </h2>
+            <p className="font-mono text-muted-foreground">
               Temukan jalur karir yang sesuai dengan minat dan tujuanmu
             </p>
-          </motion.div>
+          </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map((cat, i) => {
-              const Icon = categoryIcons[cat.id] || Code;
+            {categories.map((category) => {
+              const Icon = categoryIcons[category.slug] || Code;
               return (
                 <motion.div
-                  key={cat.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  viewport={{ once: true }}
-                  whileHover={{ y: -4 }}
+                  key={category.id}
+                  whileHover={{ y: -5 }}
+                  className="group bg-card hover:bg-card/80 border border-white/5 hover:border-primary/50 p-6 flex flex-col items-center justify-center gap-4 text-center transition-all duration-300 cursor-pointer rounded-sm relative overflow-hidden"
                 >
-                  <Link
-                    to={`/courses?category=${cat.id}`}
-                    className="block p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all text-center group"
-                    data-testid={`category-${cat.id}`}
-                  >
-                    <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <Icon className="w-6 h-6 text-primary" />
-                    </div>
-                    <h3 className="font-medium text-sm">{cat.name}</h3>
-                  </Link>
+                  <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                  <div className="p-3 bg-primary/10 rounded-none group-hover:bg-primary/20 transition-colors">
+                    <Icon className="w-6 h-6 text-primary" />
+                  </div>
+                  <span className="font-heading font-semibold text-sm uppercase tracking-wide group-hover:text-primary transition-colors">
+                    {category.name}
+                  </span>
                 </motion.div>
               );
             })}
@@ -355,107 +357,83 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* Courses Section */}
-      <section className="py-24 bg-muted/50">
+      {/* Popular Courses */}
+      <section className="py-24 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex flex-col md:flex-row md:items-end justify-between mb-12"
-          >
+          <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="font-heading font-bold text-3xl lg:text-4xl mb-4">Kursus Populer</h2>
-              <p className="text-muted-foreground max-w-2xl">
+              <h2 className="font-heading text-3xl sm:text-4xl text-white mb-4 uppercase tracking-wider">
+                Kursus Populer
+              </h2>
+              <p className="font-mono text-muted-foreground max-w-xl">
                 Mulai perjalanan codingmu dengan kursus yang dirancang khusus untuk pemula hingga profesional
               </p>
             </div>
-            <Button asChild variant="outline" className="mt-4 md:mt-0">
-              <Link to="/courses">
-                Lihat Semua
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Link>
+            <Button variant="ghost" className="hidden sm:flex group font-mono text-primary hover:text-primary hover:bg-primary/10">
+              Lihat Semua <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
-          </motion.div>
+          </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course, i) => (
-              <CourseCard key={course.id} course={course} index={i} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {courses.map((course) => (
+              <CourseCard key={course.id} course={course} />
             ))}
+          </div>
+
+          <div className="mt-8 text-center sm:hidden">
+            <Button variant="ghost" className="w-full font-mono text-primary border border-primary/20">
+              Lihat Semua <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
           </div>
         </div>
       </section>
 
-      {/* Articles Section */}
-      <section className="py-24">
+      {/* Latest Articles */}
+      <section className="py-24 bg-white/5 relative z-10 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex flex-col md:flex-row md:items-end justify-between mb-12"
-          >
+          <div className="flex justify-between items-end mb-12">
             <div>
-              <h2 className="font-heading font-bold text-3xl lg:text-4xl mb-4">Artikel Terbaru</h2>
-              <p className="text-muted-foreground max-w-2xl">
+              <h2 className="font-heading text-3xl sm:text-4xl text-white mb-4 uppercase tracking-wider">
+                Artikel Terbaru
+              </h2>
+              <p className="font-mono text-muted-foreground">
                 Tips, tutorial, dan insight terbaru dari dunia teknologi
               </p>
             </div>
-            <Button asChild variant="outline" className="mt-4 md:mt-0">
-              <Link to="/articles">
-                Lihat Semua
-                <ArrowRight className="ml-2 w-4 h-4" />
-              </Link>
+            <Button variant="ghost" className="hidden sm:flex group font-mono text-primary hover:text-primary hover:bg-primary/10">
+              Lihat Semua <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
-          </motion.div>
+          </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((article, i) => (
-              <ArticleCard key={article.id} article={article} index={i} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {articles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-br from-primary/20 to-accent/20 relative overflow-hidden">
-        <div className="absolute inset-0 hero-glow" />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="font-heading font-bold text-3xl lg:text-5xl mb-6">
-              Siap Memulai Perjalanan Codingmu?
-            </h2>
-            <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-              Bergabung dengan ribuan developer lainnya dan mulai belajar coding hari ini.
-              Gratis untuk memulai!
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button
-                asChild
-                size="lg"
-                className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 glow-primary"
-              >
-                <Link to="/register">
-                  Daftar Gratis Sekarang
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="rounded-full px-8"
-              >
-                <Link to="/pricing">
-                  Lihat Paket Premium
-                </Link>
-              </Button>
-            </div>
-          </motion.div>
+      <section className="py-24 relative overflow-hidden border-t border-primary/20">
+        <div className="absolute inset-0 bg-primary/5" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" />
+
+        <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
+          <h2 className="font-heading text-4xl sm:text-5xl text-white font-bold mb-6 uppercase tracking-wider glow-primary">
+            Siap Memulai Perjalanan Codingmu?
+          </h2>
+          <p className="font-mono text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+            Bergabung dengan ribuan developer lainnya dan mulai belajar coding hari ini.
+            Gratis untuk memulai!
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-black font-heading font-bold uppercase tracking-wider rounded-none px-10 py-6 min-w-[200px]">
+              Daftar Gratis Sekarang <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+            <Button variant="outline" size="lg" className="font-heading font-bold uppercase tracking-wider rounded-none px-10 py-6 min-w-[200px] border-primary/30 text-primary hover:bg-primary/10">
+              Lihat Paket Premium
+            </Button>
+          </div>
         </div>
       </section>
     </div>

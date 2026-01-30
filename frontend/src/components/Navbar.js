@@ -49,23 +49,31 @@ export const Navbar = () => {
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-background/80 backdrop-blur-xl border-b border-border shadow-lg' 
-          : 'bg-transparent'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
+        ? 'bg-background/80 backdrop-blur-xl border-b border-border shadow-lg'
+        : 'bg-transparent'
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3" data-testid="nav-logo">
-            <motion.img 
-              src={LOGO_URL} 
-              alt="Mavecode" 
+            <motion.img
+              src={LOGO_URL}
+              alt="Mavecode"
               className="h-9 w-9 rounded-lg"
               whileHover={{ scale: 1.05 }}
             />
-            <span className="font-heading font-bold text-xl text-foreground">Mavecode</span>
+            <span className="font-heading text-3xl font-black tracking-widest relative glitch-wrapper">
+              <span className="relative z-10" data-text="MAVECODE">
+                <span className="text-[#00FFFF] neon-blue">MAVE</span>
+                <span className="text-[#39FF14] neon-green">CODE</span>
+              </span>
+              <span className="absolute inset-0 blur-lg opacity-20 dark:opacity-50 animate-pulse-glow">
+                <span className="text-[#00FFFF]">MAVE</span>
+                <span className="text-[#39FF14]">CODE</span>
+              </span>
+            </span>
           </Link>
 
           {/* Desktop Nav */}
@@ -74,14 +82,14 @@ export const Navbar = () => {
               <Link
                 key={link.name}
                 to={link.href}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === link.href 
-                    ? 'text-primary' 
-                    : 'text-muted-foreground'
-                }`}
+                className={`text-sm font-mono font-bold uppercase tracking-widest transition-all duration-300 hover:text-[#00FFFF] hover:neon-blue relative group ${location.pathname === link.href
+                  ? 'text-[#00FFFF] neon-blue'
+                  : 'text-muted-foreground'
+                  }`}
                 data-testid={`nav-${link.name.toLowerCase().replace(' ', '-')}`}
               >
                 {link.name}
+                <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-[#00FFFF] transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
           </div>
@@ -140,9 +148,10 @@ export const Navbar = () => {
                 <Button variant="ghost" onClick={() => navigate('/login')} data-testid="nav-login">
                   Masuk
                 </Button>
-                <Button 
-                  onClick={() => navigate('/register')} 
-                  className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 glow-primary"
+                <Button
+                  onClick={() => navigate('/register')}
+                  className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 py-2 glow-primary text-base font-semibold tracking-wide"
+                  style={{ fontFamily: "'Orbitron', sans-serif" }}
                   data-testid="nav-register"
                 >
                   Daftar Gratis
@@ -178,26 +187,25 @@ export const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.href}
-                  className={`block py-2 text-base font-medium transition-colors ${
-                    location.pathname === link.href 
-                      ? 'text-primary' 
-                      : 'text-muted-foreground'
-                  }`}
+                  className={`block py-2 text-base font-medium transition-colors ${location.pathname === link.href
+                    ? 'text-primary'
+                    : 'text-muted-foreground'
+                    }`}
                 >
                   {link.name}
                 </Link>
               ))}
               {!user && (
                 <div className="pt-4 space-y-3">
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
+                  <Button
+                    variant="outline"
+                    className="w-full"
                     onClick={() => navigate('/login')}
                   >
                     Masuk
                   </Button>
-                  <Button 
-                    className="w-full bg-primary text-white" 
+                  <Button
+                    className="w-full bg-primary text-white"
                     onClick={() => navigate('/register')}
                   >
                     Daftar Gratis

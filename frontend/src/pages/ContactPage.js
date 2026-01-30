@@ -63,19 +63,22 @@ export const ContactPage = () => {
             {/* Lanyard */}
             <div className="bg-card border border-border rounded-3xl p-8 mb-8">
               <div className="flex items-center gap-4 mb-6">
-                <img 
-                  src={LOGO_URL} 
+                <img
+                  src={LOGO_URL}
                   alt="Mavecode Logo"
                   className="w-16 h-16 rounded-2xl"
                 />
                 <div>
-                  <h3 className="font-heading font-bold text-xl">Mavecode</h3>
+                  <h3 className="font-heading text-2xl relative" style={{ fontWeight: 900 }}>
+                    <span className="absolute inset-0 blur-md opacity-50 animate-pulse"><span style={{ color: '#1e3a5f' }}>MAVE</span><span style={{ color: '#f97316' }}>CODE</span></span>
+                    <span className="relative"><span style={{ color: '#1e3a5f' }}>MAVE</span><span style={{ color: '#f97316' }}>CODE</span></span>
+                  </h3>
                   <p className="text-muted-foreground text-sm">Platform Belajar Coding</p>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <a 
+                <a
                   href="mailto:firzailmidja@gmail.com"
                   className="flex items-center gap-4 p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
                   data-testid="contact-email"
@@ -89,7 +92,7 @@ export const ContactPage = () => {
                   </div>
                 </a>
 
-                <a 
+                <a
                   href="https://wa.me/6285191769521"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -121,7 +124,7 @@ export const ContactPage = () => {
             <div className="bg-card border border-border rounded-3xl p-8">
               <h3 className="font-heading font-semibold text-lg mb-4">Follow Kami</h3>
               <div className="flex gap-3">
-                <a 
+                <a
                   href="https://github.com/Maverick-list"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -129,7 +132,7 @@ export const ContactPage = () => {
                 >
                   <Github className="w-5 h-5" />
                 </a>
-                <a 
+                <a
                   href="https://www.linkedin.com/in/firza-ilmi-8912b936b/"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -137,7 +140,7 @@ export const ContactPage = () => {
                 >
                   <Linkedin className="w-5 h-5" />
                 </a>
-                <a 
+                <a
                   href="https://www.instagram.com/maverick_list/"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -213,8 +216,8 @@ export const ContactPage = () => {
                 />
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={loading}
                 className="w-full bg-primary hover:bg-primary/90 rounded-full py-6"
                 data-testid="contact-submit"

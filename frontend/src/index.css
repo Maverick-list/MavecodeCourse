@@ -6,74 +6,93 @@
 
 body {
     margin: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Space Mono', monospace;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    letter-spacing: -0.02em;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-heading {
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
-code, pre {
-    font-family: 'JetBrains Mono', monospace;
+code,
+pre,
+.font-mono {
+    font-family: 'Space Mono', monospace;
 }
 
 @layer base {
     :root {
-        --background: 210 40% 98%;
-        --foreground: 222 47% 11%;
+        /* Light Mode Defaults */
+        --background: 0 0% 100%;
+        --foreground: 240 10% 4%;
         --card: 0 0% 100%;
-        --card-foreground: 222 47% 11%;
+        --card-foreground: 240 10% 4%;
         --popover: 0 0% 100%;
-        --popover-foreground: 222 47% 11%;
-        --primary: 199 89% 48%;
+        --popover-foreground: 240 10% 4%;
+
+        /* Cyan for Light Mode Primary */
+        --primary: 189 94% 43%;
         --primary-foreground: 0 0% 100%;
-        --secondary: 215 28% 17%;
-        --secondary-foreground: 0 0% 98%;
-        --muted: 210 40% 96%;
-        --muted-foreground: 215 16% 47%;
-        --accent: 24 95% 53%;
+
+        --secondary: 240 5% 96%;
+        --secondary-foreground: 240 10% 4%;
+
+        --muted: 240 5% 96%;
+        --muted-foreground: 240 4% 46%;
+
+        /* Green for Light Mode Accent */
+        --accent: 142 71% 45%;
         --accent-foreground: 0 0% 100%;
+
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
-        --border: 214 32% 91%;
-        --input: 214 32% 91%;
-        --ring: 199 89% 48%;
-        --chart-1: 199 89% 48%;
-        --chart-2: 24 95% 53%;
-        --chart-3: 142 76% 36%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
-        --radius: 0.75rem;
+
+        --border: 240 5% 90%;
+        --input: 240 5% 90%;
+        --ring: 189 94% 43%;
+
+        --radius: 0.25rem;
     }
 
     .dark {
-        --background: 222 47% 5%;
-        --foreground: 210 40% 98%;
-        --card: 215 28% 11%;
-        --card-foreground: 210 40% 98%;
-        --popover: 215 28% 11%;
-        --popover-foreground: 210 40% 98%;
-        --primary: 199 89% 48%;
-        --primary-foreground: 0 0% 100%;
-        --secondary: 215 28% 17%;
+        /* Cyberpunk Dark Mode */
+        --background: 240 10% 4%;
+        /* #0a0a0a Deep Charcoal */
+        --foreground: 0 0% 98%;
+        --card: 240 10% 6%;
+        --card-foreground: 0 0% 98%;
+        --popover: 240 10% 6%;
+        --popover-foreground: 0 0% 98%;
+
+        /* Neon Electric Blue #00FFFF */
+        --primary: 180 100% 50%;
+        --primary-foreground: 240 10% 4%;
+
+        --secondary: 240 5% 15%;
         --secondary-foreground: 0 0% 98%;
-        --muted: 215 28% 17%;
-        --muted-foreground: 215 20% 65%;
-        --accent: 24 95% 53%;
-        --accent-foreground: 0 0% 100%;
+
+        --muted: 240 5% 15%;
+        --muted-foreground: 240 5% 65%;
+
+        /* Toxic Green #39FF14 */
+        --accent: 111 100% 54%;
+        --accent-foreground: 240 10% 4%;
+
         --destructive: 0 62.8% 45%;
         --destructive-foreground: 0 0% 98%;
-        --border: 215 28% 17%;
-        --input: 215 28% 17%;
-        --ring: 199 89% 48%;
-        --chart-1: 199 89% 48%;
-        --chart-2: 24 95% 53%;
-        --chart-3: 142 76% 36%;
-        --chart-4: 280 65% 60%;
-        --chart-5: 340 75% 55%;
+
+        --border: 240 5% 20%;
+        --input: 240 5% 20%;
+        --ring: 180 100% 50%;
     }
 }
 
@@ -81,6 +100,7 @@ code, pre {
     * {
         @apply border-border;
     }
+
     body {
         @apply bg-background text-foreground;
     }
@@ -93,84 +113,409 @@ code, pre {
 }
 
 ::-webkit-scrollbar-track {
-    background: hsl(var(--background));
+    background: transparent;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #0a0a0a;
 }
 
 ::-webkit-scrollbar-thumb {
     background: hsl(var(--muted-foreground) / 0.3);
-    border-radius: 4px;
+    border-radius: 2px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #00FFFF;
 }
 
 ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground) / 0.5);
 }
 
-/* Noise texture overlay for dark mode */
-.noise-overlay {
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #39FF14;
+}
+
+/* Scanlines Effect - Only visible in dark mode or make subtle in light */
+.scanlines {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
+    background: linear-gradient(to bottom,
+            rgba(255, 255, 255, 0),
+            rgba(255, 255, 255, 0) 50%,
+            rgba(0, 0, 0, 0.05) 50%,
+            rgba(0, 0, 0, 0.05));
+    background-size: 100% 4px;
     pointer-events: none;
-    opacity: 0.02;
     z-index: 9999;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.1;
+    display: none;
+    /* Hidden by default in light mode for cleanliness */
 }
 
-/* Hero glow effect */
-.hero-glow {
-    background: radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.15) 0%, transparent 50%);
+.dark .scanlines {
+    display: block;
+    background: linear-gradient(to bottom,
+            rgba(255, 255, 255, 0),
+            rgba(255, 255, 255, 0) 50%,
+            rgba(0, 0, 0, 0.2) 50%,
+            rgba(0, 0, 0, 0.2));
+    opacity: 0.15;
 }
 
-/* Glass effect */
-.glass {
-    backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+/* Glitch Effect */
+.glitch-wrapper {
+    position: relative;
+    display: inline-block;
 }
 
-.dark .glass {
-    background: rgba(0, 0, 0, 0.4);
+.glitch {
+    position: relative;
 }
 
-/* Glow shadow */
-.glow-primary {
-    box-shadow: 0 0 20px -5px rgba(14, 165, 233, 0.5);
+.dark .glitch {
+    color: #e0e0e0;
 }
 
-.glow-accent {
-    box-shadow: 0 0 20px -5px rgba(249, 115, 22, 0.5);
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
 }
 
-/* Animation utilities */
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+.dark .glitch::before,
+.dark .glitch::after {
+    background: #0a0a0a;
+    /* Match dark background */
 }
 
-@keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 20px -5px rgba(14, 165, 233, 0.5); }
-    50% { box-shadow: 0 0 30px -5px rgba(14, 165, 233, 0.7); }
+.glitch::before {
+    left: 2px;
+    text-shadow: -1px 0 #00FFFF;
+    clip: rect(24px, 550px, 90px, 0);
+    animation: glitch-anim-2 3s infinite linear alternate-reverse;
+    display: none;
 }
 
-.animate-float {
-    animation: float 3s ease-in-out infinite;
+.dark .glitch::before {
+    display: block;
 }
 
-.animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
+.glitch::after {
+    left: -2px;
+    text-shadow: -1px 0 #39FF14;
+    clip: rect(85px, 550px, 140px, 0);
+    animation: glitch-anim 2.5s infinite linear alternate-reverse;
+    display: none;
 }
 
-/* Study mode styles */
-.study-mode {
-    font-size: 1.1em;
-    line-height: 1.8;
+.dark .glitch::after {
+    display: block;
 }
 
-.study-mode * {
-    transition: none !important;
-    animation: none !important;
+@keyframes glitch-anim {
+    0% {
+        clip: rect(24px, 9999px, 86px, 0);
+        transform: skew(0.55deg);
+    }
+
+    5% {
+        clip: rect(75px, 9999px, 86px, 0);
+        transform: skew(0.2deg);
+    }
+
+    10% {
+        clip: rect(10px, 9999px, 25px, 0);
+        transform: skew(0.3deg);
+    }
+
+    15% {
+        clip: rect(4px, 9999px, 100px, 0);
+        transform: skew(0.5deg);
+    }
+
+    20% {
+        clip: rect(35px, 9999px, 63px, 0);
+        transform: skew(0.2deg);
+    }
+
+    25% {
+        clip: rect(98px, 9999px, 12px, 0);
+        transform: skew(0.88deg);
+    }
+
+    30% {
+        clip: rect(12px, 9999px, 85px, 0);
+        transform: skew(0.7deg);
+    }
+
+    35% {
+        clip: rect(8px, 9999px, 145px, 0);
+        transform: skew(0.3deg);
+    }
+
+    40% {
+        clip: rect(12px, 9999px, 6px, 0);
+        transform: skew(0.1deg);
+    }
+
+    45% {
+        clip: rect(10px, 9999px, 50px, 0);
+        transform: skew(0.9deg);
+    }
+
+    50% {
+        clip: rect(16px, 9999px, 45px, 0);
+        transform: skew(0.3deg);
+    }
+
+    55% {
+        clip: rect(50px, 9999px, 80px, 0);
+        transform: skew(0.2deg);
+    }
+
+    60% {
+        clip: rect(23px, 9999px, 2px, 0);
+        transform: skew(0.6deg);
+    }
+
+    65% {
+        clip: rect(45px, 9999px, 56px, 0);
+        transform: skew(0.4deg);
+    }
+
+    70% {
+        clip: rect(89px, 9999px, 13px, 0);
+        transform: skew(0.8deg);
+    }
+
+    75% {
+        clip: rect(24px, 9999px, 34px, 0);
+        transform: skew(0.4deg);
+    }
+
+    80% {
+        clip: rect(17px, 9999px, 42px, 0);
+        transform: skew(0.2deg);
+    }
+
+    85% {
+        clip: rect(23px, 9999px, 5px, 0);
+        transform: skew(0.9deg);
+    }
+
+    90% {
+        clip: rect(56px, 9999px, 34px, 0);
+        transform: skew(0.5deg);
+    }
+
+    95% {
+        clip: rect(34px, 9999px, 2px, 0);
+        transform: skew(0.3deg);
+    }
+
+    100% {
+        clip: rect(67px, 9999px, 56px, 0);
+        transform: skew(0.1deg);
+    }
+}
+
+@keyframes glitch-anim-2 {
+    0% {
+        clip: rect(24px, 9999px, 86px, 0);
+        transform: skew(0.55deg);
+    }
+
+    5% {
+        clip: rect(75px, 9999px, 86px, 0);
+        transform: skew(0.2deg);
+    }
+
+    10% {
+        clip: rect(10px, 9999px, 25px, 0);
+        transform: skew(0.3deg);
+    }
+
+    15% {
+        clip: rect(4px, 9999px, 100px, 0);
+        transform: skew(0.5deg);
+    }
+
+    20% {
+        clip: rect(35px, 9999px, 63px, 0);
+        transform: skew(0.2deg);
+    }
+
+    25% {
+        clip: rect(98px, 9999px, 12px, 0);
+        transform: skew(0.88deg);
+    }
+
+    30% {
+        clip: rect(12px, 9999px, 85px, 0);
+        transform: skew(0.7deg);
+    }
+
+    35% {
+        clip: rect(8px, 9999px, 145px, 0);
+        transform: skew(0.3deg);
+    }
+
+    40% {
+        clip: rect(12px, 9999px, 6px, 0);
+        transform: skew(0.1deg);
+    }
+
+    45% {
+        clip: rect(10px, 9999px, 50px, 0);
+        transform: skew(0.9deg);
+    }
+
+    50% {
+        clip: rect(16px, 9999px, 45px, 0);
+        transform: skew(0.3deg);
+    }
+
+    55% {
+        clip: rect(50px, 9999px, 80px, 0);
+        transform: skew(0.2deg);
+    }
+
+    60% {
+        clip: rect(23px, 9999px, 2px, 0);
+        transform: skew(0.6deg);
+    }
+
+    65% {
+        clip: rect(45px, 9999px, 56px, 0);
+        transform: skew(0.4deg);
+    }
+
+    70% {
+        clip: rect(89px, 9999px, 13px, 0);
+        transform: skew(0.8deg);
+    }
+
+    75% {
+        clip: rect(24px, 9999px, 34px, 0);
+        transform: skew(0.4deg);
+    }
+
+    80% {
+        clip: rect(17px, 9999px, 42px, 0);
+        transform: skew(0.2deg);
+    }
+
+    85% {
+        clip: rect(23px, 9999px, 5px, 0);
+        transform: skew(0.9deg);
+    }
+
+    90% {
+        clip: rect(56px, 9999px, 34px, 0);
+        transform: skew(0.5deg);
+    }
+
+    95% {
+        clip: rect(34px, 9999px, 2px, 0);
+        transform: skew(0.3deg);
+    }
+
+    100% {
+        clip: rect(67px, 9999px, 56px, 0);
+        transform: skew(0.1deg);
+    }
+}
+
+/* Neon Glow Utilities */
+.neon-blue {
+    text-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF, 0 0 20px #00FFFF;
+}
+
+.neon-green {
+    text-shadow: 0 0 5px #39FF14, 0 0 10px #39FF14, 0 0 20px #39FF14;
+}
+
+.hover-glow:hover {
+    text-shadow: 0 0 8px currentColor;
+}
+
+/* Scroll Reveal Animation */
+.reveal-text {
+    opacity: 0.1;
+    color: rgba(255, 255, 255, 0.1);
+    transition: opacity 1s ease, color 1.5s ease;
+    filter: blur(2px);
+}
+
+.reveal-text.active {
+    opacity: 1;
+    color: rgba(255, 255, 255, 1);
+    filter: blur(0);
+}
+
+/* HUD Border */
+.hud-border {
+    position: relative;
+    border: 1px solid currentColor;
+    /* Use current color */
+    box-shadow: 0 0 10px currentColor;
+    /* Use current color */
+}
+
+.dark .hud-border {
+    border-color: #00FFFF;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.hud-border::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 20px;
+    height: 20px;
+    border-top: 2px solid currentColor;
+    border-left: 2px solid currentColor;
+}
+
+.hud-border::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 20px;
+    height: 20px;
+    border-bottom: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+}
+
+/* Typewriter Animation - Cursor */
+.typewriter-cursor::after {
+    content: '|';
+    animation: blink 1s step-end infinite;
+    color: currentColor;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
 }
 
 @layer base {
