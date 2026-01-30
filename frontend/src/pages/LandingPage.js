@@ -96,7 +96,7 @@ export const LandingPage = () => {
       };
       fetchData();
     }
-  }, [isFirebaseConnected, firebaseLoading, firebaseHero, firebaseCourses, firebaseArticles, firebaseCategories, firebaseStats, firebaseMentors]);
+  }, [isFirebaseConnected, firebaseLoading, firebaseHero, firebaseCourses, firebaseArticles, firebaseCategories, firebaseStats, firebaseMentors, hero, stats]);
 
   // Get lead mentor data
   const leadMentor = mentor || {
