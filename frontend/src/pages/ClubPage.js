@@ -15,16 +15,38 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../com
 import { useAuth } from '../context/AppContext';
 import { toast } from 'sonner';
 
-// Avatar options
+// 25 Cute & Adorable Avatar options
 const AVATARS = [
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Maverick1',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Maverick2',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Maverick3',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Coder1',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Coder2',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Dev1',
-    'https://api.dicebear.com/7.x/pixel-art/svg?seed=Hacker1',
-    'https://api.dicebear.com/7.x/pixel-art/svg?seed=Hacker2',
+    // Adventurer (cute characters)
+    'https://api.dicebear.com/7.x/adventurer/svg?seed=Mave1&backgroundColor=b6e3f4',
+    'https://api.dicebear.com/7.x/adventurer/svg?seed=Mave2&backgroundColor=c0aede',
+    'https://api.dicebear.com/7.x/adventurer/svg?seed=Mave3&backgroundColor=d1d4f9',
+    'https://api.dicebear.com/7.x/adventurer/svg?seed=Coder1&backgroundColor=ffd5dc',
+    'https://api.dicebear.com/7.x/adventurer/svg?seed=Coder2&backgroundColor=ffdfbf',
+    // Fun Emoji
+    'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Happy1',
+    'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Cool2',
+    'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Cute3',
+    'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Love4',
+    'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Star5',
+    // Lorelei (anime style)
+    'https://api.dicebear.com/7.x/lorelei/svg?seed=Anime1',
+    'https://api.dicebear.com/7.x/lorelei/svg?seed=Anime2',
+    'https://api.dicebear.com/7.x/lorelei/svg?seed=Anime3',
+    'https://api.dicebear.com/7.x/lorelei/svg?seed=Kawaii',
+    'https://api.dicebear.com/7.x/lorelei/svg?seed=Chibi',
+    // Notionists (minimal cute)
+    'https://api.dicebear.com/7.x/notionists/svg?seed=Notion1',
+    'https://api.dicebear.com/7.x/notionists/svg?seed=Notion2',
+    'https://api.dicebear.com/7.x/notionists/svg?seed=Notion3',
+    'https://api.dicebear.com/7.x/notionists/svg?seed=Notion4',
+    'https://api.dicebear.com/7.x/notionists/svg?seed=Notion5',
+    // Avataaars (cartoon style)
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Avatar1',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Avatar2',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Avatar3',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Avatar4',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Avatar5',
 ];
 
 const ClubPage = () => {
@@ -387,20 +409,44 @@ const ClubPage = () => {
                                 <div className="flex gap-2">{!editingProfile && <Button variant="ghost" size="icon" onClick={() => setEditingProfile(true)}><Edit3 className="h-4 w-4" /></Button>}
                                     <Button variant="ghost" size="icon" onClick={() => setShowProfile(false)}><X className="h-5 w-5" /></Button></div></div>
                             <div className="text-center mb-6">
-                                <Avatar className="h-24 w-24 mx-auto mb-4 border-4 border-primary"><AvatarImage src={profileData.avatar} /></Avatar>
+                                {/* Animated 3D Floating Avatar */}
+                                <motion.div
+                                    animate={{ y: [0, -10, 0], rotateY: [0, 10, -10, 0] }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                                    className="relative inline-block"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/50 to-accent/50 rounded-full blur-xl opacity-50 animate-pulse" />
+                                    <Avatar className="h-28 w-28 mx-auto mb-4 border-4 border-primary relative z-10 shadow-2xl">
+                                        <AvatarImage src={profileData.avatar} className="bg-card" />
+                                    </Avatar>
+                                </motion.div>
                                 {editingProfile ? (
                                     <div className="space-y-4">
                                         <Input value={profileData.name} onChange={e => setProfileData(p => ({ ...p, name: e.target.value }))} placeholder="Nama" />
                                         <Input value={profileData.bio} onChange={e => setProfileData(p => ({ ...p, bio: e.target.value }))} placeholder="Bio" />
-                                        <div className="grid grid-cols-4 gap-2">{AVATARS.map((av, i) => (
-                                            <div key={i} className={`p-1 rounded-lg cursor-pointer ${profileData.avatar === av ? 'ring-2 ring-primary' : 'hover:bg-muted'}`}
-                                                onClick={() => setProfileData(p => ({ ...p, avatar: av }))}>
-                                                <img src={av} alt="" className="w-full aspect-square rounded" /></div>
-                                        ))}</div>
+                                        <p className="text-xs text-muted-foreground text-left">Pilih Avatar (25 pilihan):</p>
+                                        <ScrollArea className="h-48">
+                                            <div className="grid grid-cols-5 gap-2">
+                                                {AVATARS.map((av, i) => (
+                                                    <motion.div
+                                                        key={i}
+                                                        whileHover={{ scale: 1.15, rotate: 5 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        className={`p-1 rounded-xl cursor-pointer transition-all ${profileData.avatar === av ? 'ring-2 ring-primary bg-primary/20' : 'hover:bg-muted'}`}
+                                                        onClick={() => setProfileData(p => ({ ...p, avatar: av }))}
+                                                    >
+                                                        <img src={av} alt="" className="w-full aspect-square rounded-lg bg-muted" />
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                        </ScrollArea>
                                         <Button className="w-full" onClick={handleSaveProfile}><Save className="mr-2 h-4 w-4" />Simpan</Button>
                                     </div>
-                                ) : (<><h3 className="font-bold text-lg">{profileData.name}</h3><p className="text-muted-foreground text-sm">{profileData.bio}</p>
-                                    <Badge className="mt-2">{profileData.status === 'online' ? '🟢 Online' : '🟡 Idle'}</Badge></>)}
+                                ) : (<>
+                                    <h3 className="font-bold text-lg">{profileData.name}</h3>
+                                    <p className="text-muted-foreground text-sm">{profileData.bio}</p>
+                                    <Badge className="mt-2">{profileData.status === 'online' ? '🟢 Online' : '🟡 Idle'}</Badge>
+                                </>)}
                             </div>
                         </motion.div>
                     </motion.div>
