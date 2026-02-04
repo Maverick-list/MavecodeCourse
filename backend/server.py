@@ -745,8 +745,9 @@ async def get_progress(course_id: str, user: dict = Depends(get_current_user)):
 # ============ AI Chatbot ============
 import httpx
 
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'AIzaSyBF31srABxKOmh1pMvf2H3sSZK-Y8u9fG8')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+
 
 SYSTEM_PROMPT = """Kamu adalah Mavecode AI, asisten cerdas untuk platform belajar coding Mavecode. Kepribadianmu:
 - Ramah, antusias, dan suportif seperti mentor coding yang berpengalaman
