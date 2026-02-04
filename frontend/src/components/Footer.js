@@ -8,6 +8,7 @@ import {
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { toast } from 'sonner';
+import Lanyard3D from './Lanyard3D';
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/59psddfu_IMG_7510.JPG";
 
@@ -194,7 +195,7 @@ export const Footer = () => {
       {/* Main Footer */}
       <div className="bg-slate-950 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-6">
             {/* Brand */}
             <div className="col-span-2 md:col-span-3 lg:col-span-2">
               <Link to="/" className="flex items-center gap-3 mb-6">
@@ -295,6 +296,14 @@ export const Footer = () => {
                   </li>
                 ))}
               </ul>
+            </div>
+
+            {/* 3D Lanyard */}
+            <div className="hidden lg:block">
+              <h3 className="font-heading font-semibold text-white mb-4 text-sm uppercase tracking-wider text-center">Your Card</h3>
+              <div className="relative -mt-4">
+                <Lanyard3D />
+              </div>
             </div>
           </div>
         </div>

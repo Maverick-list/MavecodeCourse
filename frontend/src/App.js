@@ -27,6 +27,7 @@ import ClubPage from './pages/ClubPage';
 import BlockPage from './pages/BlockPage';
 import { AdminLayout, AdminLoginPage, AdminDashboard, AdminCoursesPage } from './pages/AdminPages';
 import NotFoundPage from './pages/NotFoundPage';
+import ProfilePage from './pages/ProfilePage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -111,6 +112,11 @@ const AppContent = () => {
         <Route path="/block" element={
           <ProtectedRoute>
             <MainLayout><BlockPage /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <MainLayout><ProfilePage /></MainLayout>
           </ProtectedRoute>
         } />
 
