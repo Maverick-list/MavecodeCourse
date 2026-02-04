@@ -26,6 +26,7 @@ import CoursePlayerPage from './pages/CoursePlayerPage';
 import ClubPage from './pages/ClubPage';
 import BlockPage from './pages/BlockPage';
 import { AdminLayout, AdminLoginPage, AdminDashboard, AdminCoursesPage } from './pages/AdminPages';
+import NotFoundPage from './pages/NotFoundPage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -151,24 +152,6 @@ const StaticPage = ({ title }) => (
   </div>
 );
 
-// 404 Page
-const NotFoundPage = () => (
-  <div className="min-h-screen pt-24 pb-16 flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="font-heading font-bold text-6xl text-primary mb-4">404</h1>
-      <h2 className="font-heading font-bold text-2xl mb-4">Halaman Tidak Ditemukan</h2>
-      <p className="text-muted-foreground mb-8">
-        Maaf, halaman yang Anda cari tidak tersedia.
-      </p>
-      <a
-        href="/"
-        className="inline-flex items-center justify-center px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
-      >
-        Kembali ke Beranda
-      </a>
-    </div>
-  </div>
-);
 
 // Main App Component
 function App() {
