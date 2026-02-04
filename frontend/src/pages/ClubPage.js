@@ -76,7 +76,7 @@ const ClubPage = () => {
     ];
 
     return (
-        <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-background">
+        <div className="flex h-[calc(100vh-80px)] overflow-hidden bg-background mt-20">
             {/* Sidebar Channels */}
             <div className="w-64 bg-card border-r border-border flex flex-col">
                 <div className="p-4 border-b border-border">
@@ -97,8 +97,8 @@ const ClubPage = () => {
                                     key={channel.id}
                                     onClick={() => setActiveChannel(channel.id)}
                                     className={`w-full flex items-center px-2 py-1.5 rounded-md transition-colors mb-0.5 ${activeChannel === channel.id
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                                        ? 'bg-primary/10 text-primary'
+                                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                                         }`}
                                 >
                                     <channel.icon className="w-4 h-4 mr-2" />
