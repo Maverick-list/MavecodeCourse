@@ -18,6 +18,8 @@ const navLinks = [
   { name: 'Kursus', href: '/courses' },
   { name: 'Live Class', href: '/live' },
   { name: 'Artikel', href: '/articles' },
+  { name: 'Club', href: '/club', isNew: true },
+  { name: 'Block', href: '/block', isNew: true },
   { name: 'Harga', href: '/pricing' },
   { name: 'FAQ', href: '/faq' },
 ];
@@ -82,13 +84,16 @@ export const Navbar = () => {
               <Link
                 key={link.name}
                 to={link.href}
-                className={`text-sm font-mono font-bold uppercase tracking-widest transition-all duration-300 hover:text-[#00FFFF] hover:neon-blue relative group ${location.pathname === link.href
+                className={`text-sm font-mono font-bold uppercase tracking-widest transition-all duration-300 hover:text-[#00FFFF] hover:neon-blue relative group flex items-center gap-1.5 ${location.pathname === link.href
                   ? 'text-[#00FFFF] neon-blue'
                   : 'text-muted-foreground'
                   }`}
                 data-testid={`nav-${link.name.toLowerCase().replace(' ', '-')}`}
               >
                 {link.name}
+                {link.isNew && (
+                  <span className="flex h-2 w-2 rounded-full bg-primary animate-pulse" />
+                )}
                 <span className="absolute -bottom-1 left-0 w-0 h-[2px] bg-[#00FFFF] transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}

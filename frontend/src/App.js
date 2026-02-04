@@ -21,6 +21,8 @@ import ContactPage from './pages/ContactPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import DashboardPage from './pages/DashboardPage';
 import CoursePlayerPage from './pages/CoursePlayerPage';
+import ClubPage from './pages/ClubPage';
+import BlockPage from './pages/BlockPage';
 import { AdminLayout, AdminLoginPage, AdminDashboard, AdminCoursesPage } from './pages/AdminPages';
 
 // Protected Route Component
@@ -96,6 +98,16 @@ const AppContent = () => {
         <Route path="/dashboard/courses/:id/learn" element={
           <ProtectedRoute>
             <CoursePlayerPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/club" element={
+          <ProtectedRoute>
+            <MainLayout><ClubPage /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/block" element={
+          <ProtectedRoute>
+            <MainLayout><BlockPage /></MainLayout>
           </ProtectedRoute>
         } />
 

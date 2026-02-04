@@ -13,6 +13,7 @@ import { Progress } from '../components/ui/progress';
 import { useAuth } from '../context/AppContext';
 import { toast } from 'sonner';
 import QuizComponent from '../components/QuizComponent';
+import ContentPlaceholder from '../components/ContentPlaceholder';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -166,10 +167,7 @@ const CoursePlayerPage = () => {
                                 </div>
                             )
                         ) : (
-                            <div className="text-center p-8">
-                                <Play className="w-20 h-20 text-slate-800 mx-auto mb-4" />
-                                <p className="text-slate-500 font-medium">Materi video belum tersedia</p>
-                            </div>
+                            <ContentPlaceholder title={`Selamat Datang di ${course?.title}`} />
                         )}
                     </div>
 

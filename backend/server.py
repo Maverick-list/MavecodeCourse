@@ -838,7 +838,18 @@ async def seed_data():
     # React Videos
     videos.extend([
         {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'Intro to React', 'video_url': 'https://www.youtube.com/watch?v=SqcY0GlETPk', 'duration_minutes': 20, 'is_preview': True, 'order': 1, 'created_at': now},
-        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'Components & Props', 'video_url': 'https://www.youtube.com/watch?v=SqcY0GlETPk', 'duration_minutes': 35, 'is_preview': False, 'order': 2, 'created_at': now}
+        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'JSX & Virtual DOM', 'video_url': 'https://www.youtube.com/watch?v=SqcY0GlETPk', 'duration_minutes': 25, 'is_preview': False, 'order': 2, 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'Components & Props', 'video_url': 'https://www.youtube.com/watch?v=SqcY0GlETPk', 'duration_minutes': 35, 'is_preview': False, 'order': 3, 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'State & Lifecycle', 'video_url': 'https://www.youtube.com/watch?v=SqcY0GlETPk', 'duration_minutes': 40, 'is_preview': False, 'order': 4, 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'Kuis: React Fundamental', 'video_url': 'quiz', 'duration_minutes': 15, 'is_preview': False, 'order': 5, 'type': 'quiz', 'created_at': now},
+    ])
+
+    # Python Videos
+    videos.extend([
+        {'id': str(uuid.uuid4()), 'course_id': python_id, 'title': 'Pengenalan Python & Setup', 'video_url': 'https://www.youtube.com/watch?v=_uQrJ0TkZlc', 'duration_minutes': 15, 'is_preview': True, 'order': 1, 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': python_id, 'title': 'Data Types in Python', 'video_url': 'https://www.youtube.com/watch?v=_uQrJ0TkZlc', 'duration_minutes': 30, 'is_preview': False, 'order': 2, 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': python_id, 'title': 'List, Tuple, & Dictionary', 'video_url': 'https://www.youtube.com/watch?v=_uQrJ0TkZlc', 'duration_minutes': 45, 'is_preview': False, 'order': 3, 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': python_id, 'title': 'Kuis: Python Dasar', 'video_url': 'quiz', 'duration_minutes': 20, 'is_preview': False, 'order': 4, 'type': 'quiz', 'created_at': now},
     ])
 
     await db.courses.delete_many({})
@@ -850,6 +861,20 @@ async def seed_data():
     
     # Seed articles
     articles = [
+        {
+            'id': str(uuid.uuid4()), 'slug': 'masa-depan-ai-2025', 'title': 'Masa Depan Artificial Intelligence di Tahun 2025',
+            'content': 'Generative AI telah mengubah cara kita bekerja. Di tahun 2025, kita akan melihat integrasi AI yang lebih dalam di setiap aspek pengembangan software. Agen AI akan menjadi rekan kerja standar bagi para developer...',
+            'excerpt': 'Bagaimana AI akan berevolusi dan apa dampaknya bagi para pengembang di masa depan?',
+            'thumbnail': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
+            'category': 'teknologi', 'tags': ['AI', 'Future', 'Tech'], 'author': 'Firza Ilmi', 'views': 3450, 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': str(uuid.uuid4()), 'slug': 'belajar-prompt-engineering', 'title': 'Panduan Lengkap Prompt Engineering untuk Developer',
+            'content': 'Menguasai cara berkomunikasi dengan Model Bahasa Besar (LLM) adalah skill krusial saat ini. Berikut adalah teknik-teknik fundamental dalam prompt engineering...',
+            'excerpt': 'Tingkatkan efektivitas penggunaan AI Anda dengan penguasaan Prompt Engineering.',
+            'thumbnail': 'https://images.unsplash.com/photo-1676299081847-824916de030a?w=400',
+            'category': 'tutorial', 'tags': ['AI', 'Prompting', 'Productivity'], 'author': 'Firza Ilmi', 'views': 2100, 'created_at': now, 'updated_at': now
+        },
         {
             'id': str(uuid.uuid4()), 'slug': 'tips-belajar-coding-efektif', 'title': '10 Tips Belajar Coding yang Efektif untuk Pemula',
             'content': 'Belajar coding bisa terasa overwhelming di awal. Berikut 10 tips yang bisa membantu perjalanan coding kamu...',
