@@ -415,7 +415,7 @@ export const LandingPage = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {categories.map((category) => {
-              const imgSrc = categoryImages[category.slug];
+              const imgSrc = categoryImages[category.id];
               return (
                 <motion.div
                   key={category.id}
