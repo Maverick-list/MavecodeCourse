@@ -197,9 +197,9 @@ export const Chatbot = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.9, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: 100, scale: 0.9, filter: 'blur(10px)' }}
+            initial={{ opacity: 0, y: 100, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 100, scale: 0.9 }}
             className="fixed bottom-6 right-6 z-50 w-[400px] max-w-[calc(100vw-48px)] h-[550px] bg-card/95 backdrop-blur-xl border border-border rounded-3xl shadow-2xl flex flex-col overflow-hidden"
             style={{ boxShadow: '0 0 50px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 255, 255, 0.1)' }}
             data-testid="chatbot-window"
@@ -278,8 +278,8 @@ export const Chatbot = () => {
                       )}
                     </div>
                     <div className={`max-w-[85%] rounded-[20px] px-4 py-3 shadow-sm ${msg.role === 'user'
-                        ? 'bg-primary text-white rounded-tr-none'
-                        : 'bg-muted/50 backdrop-blur-sm border border-white/5 rounded-tl-none'
+                      ? 'bg-primary text-white rounded-tr-none'
+                      : 'bg-muted/50 backdrop-blur-sm border border-white/5 rounded-tl-none'
                       }`}>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                     </div>

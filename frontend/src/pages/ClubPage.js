@@ -136,7 +136,7 @@ const ClubPage = () => {
         }
 
         return () => stopCamera();
-    }, [isVideoOn, showVideoCall]);
+    }, [isVideoOn, showVideoCall, isMuted]);
 
     // Update audio mute state
     useEffect(() => {

@@ -7,27 +7,28 @@ const Lanyard3D = () => {
     const cardRef = useRef(null);
     const [swing, setSwing] = useState(0);
 
-    // Mouse position for 3D effect
-    const mouseX = useMotionValue(0);
-    const mouseY = useMotionValue(0);
     const rotateX = useSpring(0, { stiffness: 300, damping: 30 });
     const rotateY = useSpring(0, { stiffness: 300, damping: 30 });
 
     useEffect(() => {
         const saved = localStorage.getItem('mavecode_profile');
-        if (saved) {
-            const data = JSON.parse(saved);
-            setProfile({
-                name: data.firstName || 'User',
-                photoUrl: data.photoUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.firstName || 'User'}`
-            });
+        try {
+            if (saved) {
+                const data = JSON.parse(saved);
+                setProfile({
+                    name: data.firstName || 'User',
+                    photoUrl: data.photoUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.firstName || 'User'}`
+                });
+            }
+        } catch (e) {
+            console.error("Failed to parse profile", e);
         }
     }, []);
 
     // Pendulum swing effect
     useEffect(() => {
         const interval = setInterval(() => {
-            setSwing(Math.sin(Date.now() / 1000) * 8);
+            setSwing(Math.sin(Date.now() / 1500) * 5);
         }, 50);
         return () => clearInterval(interval);
     }, []);
@@ -54,7 +55,7 @@ const Lanyard3D = () => {
             <div className="relative">
                 <div className="w-4 h-4 bg-gradient-to-b from-gray-600 to-gray-800 rounded-full mx-auto shadow-lg border border-gray-500" />
                 <motion.div
-                    className="w-3 bg-gradient-to-b from-cyan-400 via-cyan-500 to-cyan-600 mx-auto rounded-sm shadow-lg"
+                    className="w-3 bg-gradient-to-b from-primary via-primary/50 to-accent mx-auto rounded-sm shadow-lg"
                     style={{ height: 60, rotate: swing, transformOrigin: 'top center' }}
                 />
                 <motion.div
@@ -71,7 +72,7 @@ const Lanyard3D = () => {
                 style={{ rotateX, rotateY, rotate: swing, transformOrigin: 'top center' }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
-                className="relative w-44 h-56 cursor-grab active:cursor-grabbing"
+                className="relative w-44 h-56 cursor-pointer"
             >
                 <div
                     className="absolute inset-0 rounded-xl overflow-hidden shadow-2xl"
@@ -85,20 +86,20 @@ const Lanyard3D = () => {
 
                     <div className="relative z-10 h-full flex flex-col items-center justify-center p-4">
                         <div className="relative mb-3">
-                            <div className="absolute inset-0 bg-cyan-400/30 rounded-full blur-md animate-pulse" />
+                            <div className="absolute inset-0 bg-primary/30 rounded-full blur-md animate-pulse" />
                             <img
                                 src={profile.photoUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.name}`}
                                 alt={profile.name}
-                                className="w-16 h-16 rounded-full object-cover border-2 border-cyan-400 relative z-10 bg-slate-800"
+                                className="w-16 h-16 rounded-full object-cover border-2 border-primary relative z-10 bg-slate-800"
                             />
                         </div>
 
-                        <h3 className="text-white font-bold text-lg tracking-wide text-center uppercase">{profile.name}</h3>
-                        <p className="text-cyan-400 text-[10px] font-mono tracking-widest mt-1">MAVECODE STUDENT</p>
-                        <div className="w-16 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent my-3" />
+                        <h3 className="text-white font-bold text-lg tracking-wide text-center uppercase truncate w-full">{profile.name}</h3>
+                        <p className="text-primary text-[10px] font-mono tracking-widest mt-1">MAVECODE STUDENT</p>
+                        <div className="w-16 h-px bg-gradient-to-r from-transparent via-primary to-transparent my-3" />
                         <div className="text-center">
-                            <span className="text-cyan-400 font-black text-xs tracking-widest">MAVE</span>
-                            <span className="text-green-400 font-black text-xs tracking-widest">CODE</span>
+                            <span className="text-primary font-black text-xs tracking-widest">MAVE</span>
+                            <span className="text-accent font-black text-xs tracking-widest">CODE</span>
                         </div>
 
                         <div className="absolute bottom-3 right-3 w-8 h-8 bg-white/10 rounded border border-white/20 flex items-center justify-center">
@@ -110,7 +111,7 @@ const Lanyard3D = () => {
                 </div>
             </motion.div>
 
-            <p className="text-center text-[10px] text-muted-foreground mt-3 opacity-60">Hover untuk interaksi 3D ↔️</p>
+            <p className="text-center text-[10px] text-muted-foreground mt-3 opacity-60 font-mono tracking-tighter">ID: #{Math.floor(Math.random() * 89999 + 10000)}</p>
         </div>
     );
 };
