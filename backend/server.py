@@ -775,9 +775,9 @@ async def get_stats():
     users_count = await db.users.count_documents({})
     articles_count = await db.articles.count_documents({})
     return {
-        "courses": courses_count or 50,
-        "students": users_count or 1000,
-        "articles": articles_count or 100,
+        "courses": courses_count + 50,
+        "students": users_count + 1000,
+        "articles": articles_count + 10,
         "mentors": 5
     }
 

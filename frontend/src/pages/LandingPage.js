@@ -59,7 +59,7 @@ export const LandingPage = () => {
   } = useFirebaseData();
 
   // Local state (fallback to API)
-  const [stats, setStats] = useState({ courses: 50, students: 1000, articles: 100, mentors: 5 });
+  const [stats, setStats] = useState({ courses: 50, students: 1000, articles: 10, mentors: 5 });
   const [courses, setCourses] = useState([]);
   const [articles, setArticles] = useState([]);
   const [categories, setCategories] = useState([]);
