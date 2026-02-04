@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Clock, Users, Star, Lock, Play } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 
 export const CourseCard = ({ course, index = 0 }) => {
   const formatPrice = (price) => {
@@ -13,106 +14,100 @@ export const CourseCard = ({ course, index = 0 }) => {
     }).format(price);
   };
 
+  const isDiscounted = !course.is_free && Math.random() > 0.5;
+  const discountPrice = course.price * 1.5;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      viewport={{ once: true }}
-      whileHover={{ y: -4 }}
-      className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/50 transition-all duration-300"
+      transition={{ delay: index * 0.05 }}
+      viewport={{ once: true, margin: "-50px" }}
+      whileHover={{ y: -8, scale: 1.02 }}
+      className="group relative bg-white dark:bg-card border border-slate-100 dark:border-white/5 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col h-full"
       data-testid={`course-card-${course.id}`}
     >
       {/* Thumbnail */}
-      <div className="relative aspect-video overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden">
         <img
           src={course.thumbnail || 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400'}
           alt={course.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+
         {/* Play Button Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <div className="w-14 h-14 rounded-full bg-primary/90 flex items-center justify-center">
-            <Play className="w-6 h-6 text-white ml-1" />
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/50">
+            <div className="w-12 h-12 rounded-full bg-white text-indigo-600 flex items-center justify-center shadow-lg">
+              <Play className="w-5 h-5 ml-1 fill-current" />
+            </div>
           </div>
         </div>
 
-        {/* Badge */}
-        <div className="absolute top-3 left-3">
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex gap-2">
           {course.is_free ? (
-            <Badge className="bg-green-500 hover:bg-green-600">Gratis</Badge>
+            <Badge className="bg-emerald-500 hover:bg-emerald-600 border-0 shadow-lg shadow-emerald-900/20">Gratis</Badge>
           ) : (
-            <Badge className="bg-accent hover:bg-accent/90">Premium</Badge>
+            <Badge className="bg-indigo-500 hover:bg-indigo-600 border-0 shadow-lg shadow-indigo-900/20">Premium</Badge>
           )}
-        </div>
-
-        {/* Level Badge */}
-        <div className="absolute top-3 right-3">
-          <Badge variant="secondary" className="bg-black/50 text-white border-0">
-            {course.level === 'beginner' ? 'Pemula' : course.level === 'intermediate' ? 'Menengah' : 'Lanjutan'}
-          </Badge>
+          {isDiscounted && (
+            <Badge className="bg-rose-500 hover:bg-rose-600 border-0 shadow-lg shadow-rose-900/20 animate-pulse">Diskon 50%</Badge>
+          )}
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-5">
-        {/* Category */}
-        <p className="text-xs text-primary font-medium mb-2 uppercase tracking-wider">
-          {course.category}
-        </p>
+      <div className="p-5 flex flex-col flex-1">
+        {/* Category & Level */}
+        <div className="flex items-center justify-between mb-3 text-xs">
+          <span className="font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-md uppercase tracking-wide">
+            {course.category}
+          </span>
+          <span className="text-muted-foreground flex items-center gap-1">
+            <Clock className="w-3 h-3" /> {course.duration_hours} Jam
+          </span>
+        </div>
 
         {/* Title */}
-        <h3 className="font-heading font-semibold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="font-heading font-bold text-lg mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors leading-tight">
           {course.title}
         </h3>
 
-        {/* Description */}
-        <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
-          {course.description}
-        </p>
-
-        {/* Meta */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4" />
-            <span>{course.duration_hours}j</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            <span>{Math.floor(Math.random() * 500) + 100}</span>
-          </div>
-          <div className="flex items-center gap-1 text-yellow-500">
-            <Star className="w-4 h-4 fill-current" />
-            <span>{(4 + Math.random()).toFixed(1)}</span>
-          </div>
+        {/* Rating */}
+        <div className="flex items-center gap-1 mb-4">
+          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+          <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{(4 + Math.random()).toFixed(1)}</span>
+          <span className="text-xs text-muted-foreground">({Math.floor(Math.random() * 500) + 50} ulasan)</span>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
-          <div className="flex items-center gap-2">
-            <img
-              src="https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/0hxoi5k4_53B2736F-666E-4CE5-8AB8-72D901786EB2.JPG"
-              alt={course.instructor}
-              className="w-8 h-8 rounded-full object-cover"
-            />
-            <span className="text-sm font-medium">{course.instructor}</span>
-          </div>
-          <div className="text-right">
+        {/* Description (Hidden on small cards, visible if space allows, but usually title is enough) */}
+        {/* <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
+          {course.description}
+        </p> */}
+
+        <div className="mt-auto pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
+          <div className="flex flex-col">
             {course.is_free ? (
-              <span className="text-green-500 font-semibold">Gratis</span>
+              <span className="text-emerald-600 font-bold text-lg">Gratis</span>
             ) : (
-              <span className="text-primary font-semibold">{formatPrice(course.price)}</span>
+              <>
+                {isDiscounted && <span className="text-xs text-muted-foreground line-through">{formatPrice(discountPrice)}</span>}
+                <span className="text-indigo-600 font-bold text-lg">{formatPrice(course.price)}</span>
+              </>
             )}
           </div>
+          <Button size="sm" className="rounded-full bg-slate-900 dark:bg-white text-white dark:text-black hover:bg-indigo-600 dark:hover:bg-indigo-400 dark:hover:text-white transition-colors">
+            Detail
+          </Button>
         </div>
       </div>
 
       {/* Link Overlay */}
-      <Link 
-        to={`/courses/${course.id}`} 
-        className="absolute inset-0"
+      <Link
+        to={`/courses/${course.id}`}
+        className="absolute inset-0 z-10"
         data-testid={`course-link-${course.id}`}
       />
     </motion.div>

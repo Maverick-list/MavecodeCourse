@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
 import CourseCard from '../components/CourseCard';
 import ArticleCard from '../components/ArticleCard';
 import { useFirebaseData } from '../context/FirebaseContext';
@@ -321,6 +322,79 @@ export const LandingPage = () => {
         </div>
       </section>
 
+      {/* Learning Paths Section (Ruangguru style) */}
+      <section className="py-24 relative z-10 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-4">
+            <div className="max-w-xl">
+              <h2 className="font-heading text-4xl font-bold mb-4 uppercase tracking-tight">Jalur Belajar Karir</h2>
+              <p className="text-muted-foreground font-mono">Kurikulum terstruktur yang dirancang khusus untuk membantumu menguasai skill dari nol hingga siap kerja.</p>
+            </div>
+            <Button variant="outline" className="rounded-full border-primary/20 text-primary hover:bg-primary/10 px-8 h-12">Lihat Semua Jalur</Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                title: 'Frontend Master Academy',
+                desc: 'Kuasai pembuatan antarmuka modern dengan React, Next.js, dan TailwindCSS.',
+                color: 'from-blue-600 to-indigo-600',
+                icon: Code,
+                courses: 12,
+                students: '4.5k+'
+              },
+              {
+                title: 'Backend Scalability Expert',
+                desc: 'Belajar arsitektur microservices, Node.js, dan optimasi database.',
+                color: 'from-emerald-600 to-teal-700',
+                icon: Server,
+                courses: 15,
+                students: '2.8k+'
+              },
+              {
+                title: 'Data Science & AI Intelligence',
+                desc: 'Gali insight dari data dan bangun model Machine Learning dengan Python.',
+                color: 'from-purple-600 to-pink-600',
+                icon: BarChart3,
+                courses: 10,
+                students: '3.1k+'
+              }
+            ].map((path, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ y: -10 }}
+                className="group relative h-[380px] rounded-[2.5rem] overflow-hidden p-8 flex flex-col justify-end text-white shadow-xl hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${path.color} z-0 group-hover:scale-110 transition-transform duration-700`} />
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 z-0" />
+                <div className="absolute top-8 left-8 p-4 bg-white/20 backdrop-blur-md rounded-3xl z-10">
+                  <path.icon className="w-8 h-8" />
+                </div>
+
+                <div className="relative z-10">
+                  <Badge className="bg-white/20 hover:bg-white/30 border-0 mb-4 px-3 py-1 text-[10px] tracking-widest uppercase font-bold">Recommended for Jobs</Badge>
+                  <h3 className="text-2xl font-heading font-bold mb-3">{path.title}</h3>
+                  <p className="text-white/80 text-sm mb-6 line-clamp-2 leading-relaxed">{path.desc}</p>
+
+                  <div className="flex items-center justify-between pt-6 border-t border-white/10">
+                    <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-tighter">
+                      <span className="flex items-center gap-1.5"><BookOpen size={14} /> {path.courses} Kursus</span>
+                      <span className="flex items-center gap-1.5"><Users size={14} /> {path.students} Siswa</span>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-white text-slate-900 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-lg">
+                      <ArrowRight size={20} />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Categories Section */}
       <section className="py-24 bg-white/5 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -436,7 +510,7 @@ export const LandingPage = () => {
           </div>
         </div>
       </section>
-    </div>
+    </div >
   );
 };
 

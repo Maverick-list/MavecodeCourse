@@ -15,6 +15,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
+import random
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -63,6 +64,9 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class GoogleLoginRequest(BaseModel):
+    token: str
 
 class UserResponse(BaseModel):
     id: str
@@ -117,6 +121,7 @@ class VideoCreate(BaseModel):
     duration_minutes: int = 0
     order: int = 0
     is_preview: bool = False
+    type: str = "video"
 
 class VideoResponse(BaseModel):
     id: str
@@ -127,6 +132,7 @@ class VideoResponse(BaseModel):
     duration_minutes: int
     order: int
     is_preview: bool
+    type: str = "video"
     created_at: str
 
 class ArticleCreate(BaseModel):
@@ -193,6 +199,20 @@ class FAQResponse(BaseModel):
     answer: str
     category: str
     order: int
+
+class CreateOrder(BaseModel):
+    course_id: str
+    payment_method: str  # 'bca', 'gopay', etc.
+
+class OrderResponse(BaseModel):
+    id: str
+    user_id: str
+    course_id: str
+    amount: float
+    status: str  # 'pending', 'paid', 'failed'
+    payment_method: str
+    va_number: Optional[str] = None  # Simulated VA Number
+    created_at: str
 
 class HeroContentUpdate(BaseModel):
     title: str
@@ -299,15 +319,61 @@ async def register(data: UserCreate):
 async def login(data: UserLogin):
     user = await db.users.find_one({'email': data.email}, {'_id': 0})
     if not user or not verify_password(data.password, user['password']):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=400, detail="Invalid credentials")
     
     token = create_token(user['id'])
-    user_response = UserResponse(
-        id=user['id'], email=user['email'], name=user['name'],
-        phone=user.get('phone'), is_premium=user.get('is_premium', False),
-        created_at=user['created_at']
-    )
-    return TokenResponse(token=token, user=user_response)
+    return TokenResponse(token=token, user=UserResponse(**user))
+
+@api_router.post("/auth/google", response_model=TokenResponse)
+async def google_login(data: GoogleLoginRequest):
+    logger.info(f"DEBUG: Received Google Token (first 50 chars): {data.token[:50]}...")
+    try:
+        # Decode token without signature verification for demo purposes
+        # In production, verifying against Google's public keys is required
+        
+        # PyJWT 2.0+ uses options={'verify_signature': False}
+        # Older versions used verify=False. We'll try the modern way first.
+        try:
+             payload = jwt.decode(data.token, options={"verify_signature": False})
+        except TypeError:
+             # Fallback for older interface if somehow loaded
+             payload = jwt.decode(data.token, verify=False)
+             
+        logger.info(f"DEBUG: Decoded Payload: {payload}")
+        
+        email = payload.get('email')
+        name = payload.get('name', 'Google User')
+        
+        if not email:
+            logger.error("ERROR: No email in payload")
+            raise HTTPException(status_code=400, detail="Invalid Google Token: Email missing")
+            
+    except Exception as e:
+        logger.error(f"CRITICAL ERROR in google_login: {str(e)}")
+        # import traceback
+        # traceback.print_exc()
+        raise HTTPException(status_code=400, detail=f"Token validation error: {str(e)}")
+
+    user = await db.users.find_one({'email': email}, {'_id': 0})
+    now = datetime.now(timezone.utc).isoformat()
+
+    if not user:
+        # Register new user
+        user_id = str(uuid.uuid4())
+        user_doc = {
+            'id': user_id,
+            'email': email,
+            'password': hash_password(str(uuid.uuid4())), # Random password
+            'name': name,
+            'phone': None,
+            'is_premium': False,
+            'created_at': now
+        }
+        await db.users.insert_one(user_doc)
+        user = user_doc
+    
+    token = create_token(user['id'])
+    return TokenResponse(token=token, user=UserResponse(**user))
 
 @api_router.post("/auth/admin", response_model=AdminTokenResponse)
 async def admin_login(data: AdminLogin):
@@ -547,6 +613,58 @@ async def create_faq(data: FAQCreate, admin: dict = Depends(get_admin_user)):
     await db.faqs.insert_one(faq_doc)
     return FAQResponse(**faq_doc)
 
+# ============ Payment & Orders ============
+
+@api_router.post("/orders", response_model=OrderResponse)
+async def create_order(data: CreateOrder, user: dict = Depends(get_current_user)):
+    course = await db.courses.find_one({'id': data.course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Check if already purchased
+    # (Simplified: In real app check transaction history)
+    
+    order_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Simulate VA Number generation based on method
+    va_number = None
+    if data.payment_method in ['bca', 'mandiri', 'bni', 'bri']:
+        va_number = f"88{random.randint(10000000, 99999999)}"
+    
+    order_doc = {
+        'id': order_id,
+        'user_id': user['id'],
+        'course_id': data.course_id,
+        'amount': course['price'],
+        'status': 'pending',
+        'payment_method': data.payment_method,
+        'va_number': va_number,
+        'created_at': now
+    }
+    
+    await db.orders.insert_one(order_doc)
+    return OrderResponse(**order_doc)
+
+@api_router.post("/orders/{order_id}/pay")
+async def pay_order(order_id: str, user: dict = Depends(get_current_user)):
+    # Simulate payment success
+    result = await db.orders.update_one(
+        {'id': order_id, 'user_id': user['id']},
+        {'$set': {'status': 'paid'}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # GRANT ACCESS: For now, buying any course grants Premium status (Subscription Model)
+    # In a full system, we would add to a 'purchased_courses' list or 'subscriptions' collection.
+    await db.users.update_one(
+        {'id': user['id']}, 
+        {'$set': {'is_premium': True}}
+    )
+    
+    return {"message": "Payment successful", "status": "paid"}
+
 @api_router.put("/faqs/{faq_id}", response_model=FAQResponse)
 async def update_faq(faq_id: str, data: FAQCreate, admin: dict = Depends(get_admin_user)):
     result = await db.faqs.update_one({'id': faq_id}, {'$set': data.model_dump()})
@@ -671,32 +789,64 @@ async def seed_data():
     now = datetime.now(timezone.utc).isoformat()
     
     # Seed courses
+    # Course IDs
+    js_id = str(uuid.uuid4())
+    react_id = str(uuid.uuid4())
+    python_id = str(uuid.uuid4())
+    node_id = str(uuid.uuid4())
+    html_id = str(uuid.uuid4())
+    flutter_id = str(uuid.uuid4())
+
+    # Seed courses
     courses = [
         {
-            'id': str(uuid.uuid4()), 'title': 'JavaScript Fundamentals', 'description': 'Pelajari dasar-dasar JavaScript dari variabel hingga async/await. Cocok untuk pemula yang ingin memulai karir sebagai web developer.',
-            'thumbnail': 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400', 'price': 0, 'is_free': True, 'category': 'web', 'level': 'beginner', 'duration_hours': 10, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
+            'id': js_id, 'title': 'JavaScript Fundamentals', 'description': 'Pelajari dasar-dasar JavaScript dari variabel hingga async/await. Cocok untuk pemula yang ingin memulai karir sebagai web developer.',
+            'thumbnail': 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400', 'price': 0, 'is_free': True, 'category': 'backend', 'level': 'beginner', 'duration_hours': 10, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
         },
         {
-            'id': str(uuid.uuid4()), 'title': 'React.js Mastery', 'description': 'Bangun aplikasi web modern dengan React.js. Dari komponen dasar hingga state management dengan Redux.',
+            'id': react_id, 'title': 'React.js Mastery', 'description': 'Bangun aplikasi web modern dengan React.js. Dari komponen dasar hingga state management dengan Redux.',
             'thumbnail': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400', 'price': 199000, 'is_free': False, 'category': 'frontend', 'level': 'intermediate', 'duration_hours': 20, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
         },
         {
-            'id': str(uuid.uuid4()), 'title': 'Python untuk Data Science', 'description': 'Kuasai Python dan library populer seperti Pandas, NumPy, dan Matplotlib untuk analisis data.',
+            'id': python_id, 'title': 'Python untuk Data Science', 'description': 'Kuasai Python dan library populer seperti Pandas, NumPy, dan Matplotlib untuk analisis data.',
             'thumbnail': 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400', 'price': 299000, 'is_free': False, 'category': 'data', 'level': 'intermediate', 'duration_hours': 25, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
         },
         {
-            'id': str(uuid.uuid4()), 'title': 'Node.js Backend Development', 'description': 'Buat REST API dan backend scalable dengan Node.js, Express, dan MongoDB.',
+            'id': node_id, 'title': 'Node.js Backend Development', 'description': 'Buat REST API dan backend scalable dengan Node.js, Express, dan MongoDB.',
             'thumbnail': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400', 'price': 249000, 'is_free': False, 'category': 'backend', 'level': 'intermediate', 'duration_hours': 18, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
         },
         {
-            'id': str(uuid.uuid4()), 'title': 'HTML & CSS untuk Pemula', 'description': 'Langkah pertama menjadi web developer. Pelajari cara membuat website dari nol.',
+            'id': html_id, 'title': 'HTML & CSS untuk Pemula', 'description': 'Langkah pertama menjadi web developer. Pelajari cara membuat website dari nol.',
             'thumbnail': 'https://images.unsplash.com/photo-1621839673705-6617adf9e890?w=400', 'price': 0, 'is_free': True, 'category': 'web', 'level': 'beginner', 'duration_hours': 8, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
         },
         {
-            'id': str(uuid.uuid4()), 'title': 'Flutter Mobile App Development', 'description': 'Buat aplikasi mobile cross-platform dengan satu codebase menggunakan Flutter dan Dart.',
+            'id': flutter_id, 'title': 'Flutter Mobile App Development', 'description': 'Buat aplikasi mobile cross-platform dengan satu codebase menggunakan Flutter dan Dart.',
             'thumbnail': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400', 'price': 349000, 'is_free': False, 'category': 'mobile', 'level': 'intermediate', 'duration_hours': 30, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
         }
     ]
+
+    # Seed Videos (Curriculum)
+    videos = []
+    
+    # JS Videos
+    videos.extend([
+        {'id': str(uuid.uuid4()), 'course_id': js_id, 'title': 'Pengenalan JavaScript', 'video_url': 'https://www.youtube.com/watch?v=RUTV_5m4VeI', 'duration_minutes': 15, 'is_preview': True, 'order': 1, 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': js_id, 'title': 'Variables & Data Types', 'video_url': 'https://www.youtube.com/watch?v=RUTV_5m4VeI', 'duration_minutes': 25, 'is_preview': False, 'order': 2, 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': js_id, 'title': 'Kuis: Dasar JavaScript', 'video_url': 'quiz', 'duration_minutes': 10, 'is_preview': False, 'order': 3, 'type': 'quiz', 'created_at': now}
+    ])
+
+    # React Videos
+    videos.extend([
+        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'Intro to React', 'video_url': 'https://www.youtube.com/watch?v=SqcY0GlETPk', 'duration_minutes': 20, 'is_preview': True, 'order': 1, 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'Components & Props', 'video_url': 'https://www.youtube.com/watch?v=SqcY0GlETPk', 'duration_minutes': 35, 'is_preview': False, 'order': 2, 'created_at': now}
+    ])
+
+    await db.courses.delete_many({})
+    await db.courses.insert_many(courses)
+    
+    await db.videos.delete_many({})
+    if videos:
+        await db.videos.insert_many(videos)
     
     # Seed articles
     articles = [
@@ -770,15 +920,15 @@ async def root():
     return {"message": "Mavecode API v1.0", "status": "running"}
 
 # Include router and middleware
-app.include_router(api_router)
-
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(api_router)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

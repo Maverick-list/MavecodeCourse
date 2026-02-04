@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, ThemeProvider, useAuth } from './context/AppContext';
 import { FirebaseProvider } from './context/FirebaseContext';
 import Navbar from './components/Navbar';
@@ -19,6 +20,7 @@ import LiveClassPage from './pages/LiveClassPage';
 import ContactPage from './pages/ContactPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import DashboardPage from './pages/DashboardPage';
+import CoursePlayerPage from './pages/CoursePlayerPage';
 import { AdminLayout, AdminLoginPage, AdminDashboard, AdminCoursesPage } from './pages/AdminPages';
 
 // Protected Route Component
@@ -30,11 +32,31 @@ const ProtectedRoute = ({ children }) => {
 };
 
 // Main Layout with Navbar and Footer
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
+
+const PageWrapper = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3 }}
+    className="h-full"
+  >
+    {children}
+  </motion.div>
+);
+
 const MainLayout = ({ children }) => {
+  const location = useLocation();
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        <PageWrapper key={location.pathname}>
+          {children}
+        </PageWrapper>
+      </main>
       <Footer />
       <Chatbot />
     </div>
@@ -61,7 +83,6 @@ const AppContent = () => {
         <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
         <Route path="/register" element={<MainLayout><RegisterPage /></MainLayout>} />
 
-        {/* Protected User Dashboard */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <MainLayout><DashboardPage /></MainLayout>
@@ -70,6 +91,11 @@ const AppContent = () => {
         <Route path="/dashboard/courses" element={
           <ProtectedRoute>
             <MainLayout><DashboardPage /></MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard/courses/:id/learn" element={
+          <ProtectedRoute>
+            <CoursePlayerPage />
           </ProtectedRoute>
         } />
 
@@ -131,14 +157,18 @@ const NotFoundPage = () => (
 
 // Main App Component
 function App() {
+  const CLIENT_ID = "762388730678-5jvefesa8u27mqo9nhnmmq3ujq5h88re.apps.googleusercontent.com";
+
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <FirebaseProvider>
-          <AppContent />
-        </FirebaseProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <GoogleOAuthProvider clientId={CLIENT_ID}>
+      <ThemeProvider>
+        <AuthProvider>
+          <FirebaseProvider>
+            <AppContent />
+          </FirebaseProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 }
 

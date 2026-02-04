@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, Link } from 'react-router-dom';
-import { 
-  Play, Clock, Users, Star, Lock, CheckCircle, 
+import {
+  Play, Clock, Users, Star, Lock, CheckCircle,
   ChevronDown, ChevronUp, BookOpen, Award
 } from 'lucide-react';
 import axios from 'axios';
@@ -10,6 +10,8 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { useAuth } from '../context/AppContext';
+
+import { PaymentModal } from '../components/PaymentModal';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const MENTOR_IMAGE = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/0hxoi5k4_53B2736F-666E-4CE5-8AB8-72D901786EB2.JPG";
@@ -22,6 +24,7 @@ export const CourseDetailPage = () => {
   const [progress, setProgress] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedSections, setExpandedSections] = useState({});
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,14 +36,14 @@ export const CourseDetailPage = () => {
         ]);
         setCourse(courseRes.data);
         setVideos(videosRes.data);
-        
+
         if (token) {
           try {
             const progressRes = await axios.get(`${API}/progress/${id}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             setProgress(progressRes.data);
-          } catch (err) {}
+          } catch (err) { }
         }
       } catch (err) {
         console.error('Error fetching course:', err);
@@ -144,8 +147,8 @@ export const CourseDetailPage = () => {
 
               {/* Instructor */}
               <div className="flex items-center gap-3">
-                <img 
-                  src={MENTOR_IMAGE} 
+                <img
+                  src={MENTOR_IMAGE}
                   alt={course.instructor}
                   className="w-12 h-12 rounded-full object-cover"
                 />
@@ -165,7 +168,7 @@ export const CourseDetailPage = () => {
             >
               {/* Thumbnail */}
               <div className="relative aspect-video rounded-xl overflow-hidden mb-6">
-                <img 
+                <img
                   src={course.thumbnail || 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=400'}
                   alt={course.title}
                   className="w-full h-full object-cover"
@@ -199,16 +202,20 @@ export const CourseDetailPage = () => {
 
               {/* CTA */}
               {canAccess ? (
-                <Button 
+                <Button
+                  asChild
                   className="w-full bg-primary hover:bg-primary/90 rounded-full py-6"
                   data-testid="start-course-btn"
                 >
-                  {overallProgress > 0 ? 'Lanjutkan Belajar' : 'Mulai Belajar'}
+                  <Link to={`/dashboard/courses/${id}/learn`}>
+                    {overallProgress > 0 ? 'Lanjutkan Belajar' : 'Mulai Belajar'}
+                  </Link>
                 </Button>
               ) : (
                 <div className="space-y-3">
-                  <Button 
+                  <Button
                     className="w-full bg-accent hover:bg-accent/90 rounded-full py-6"
+                    onClick={() => setPaymentOpen(true)}
                     data-testid="buy-course-btn"
                   >
                     Beli Kursus Ini
@@ -218,6 +225,14 @@ export const CourseDetailPage = () => {
                   </p>
                 </div>
               )}
+
+              {/* Payment Modal */}
+              <PaymentModal
+                isOpen={paymentOpen}
+                onClose={() => setPaymentOpen(false)}
+                course={course}
+                onSuccess={() => window.location.reload()}
+              />
 
               {/* Features */}
               <div className="mt-6 pt-6 border-t border-border space-y-3">
@@ -249,31 +264,29 @@ export const CourseDetailPage = () => {
               transition={{ delay: 0.3 }}
             >
               <h2 className="font-heading font-bold text-2xl mb-6">Kurikulum</h2>
-              
+
               {videos.length > 0 ? (
                 <div className="space-y-3">
                   {videos.map((video, i) => {
                     const isCompleted = progress.find(p => p.video_id === video.id)?.completed;
                     const isLocked = !video.is_preview && !canAccess;
-                    
+
                     return (
                       <motion.div
                         key={video.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
-                          isLocked 
-                            ? 'bg-muted/50 border-border' 
-                            : 'bg-card border-border hover:border-primary/50 cursor-pointer'
-                        }`}
+                        className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${isLocked
+                          ? 'bg-muted/50 border-border'
+                          : 'bg-card border-border hover:border-primary/50 cursor-pointer'
+                          }`}
                         data-testid={`video-${video.id}`}
                       >
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          isCompleted ? 'bg-green-500/20 text-green-500' : 
-                          isLocked ? 'bg-muted text-muted-foreground' : 
-                          'bg-primary/20 text-primary'
-                        }`}>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isCompleted ? 'bg-green-500/20 text-green-500' :
+                          isLocked ? 'bg-muted text-muted-foreground' :
+                            'bg-primary/20 text-primary'
+                          }`}>
                           {isCompleted ? (
                             <CheckCircle className="w-5 h-5" />
                           ) : isLocked ? (

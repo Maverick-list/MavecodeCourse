@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const AUTH_URL = process.env.REACT_APP_AUTH_URL;
 export const API = `${BACKEND_URL}/api`;
+const AUTH_API = `${AUTH_URL}/api`;
 
 // Auth Context
 const AuthContext = createContext(null);
@@ -23,7 +26,7 @@ export const AuthProvider = ({ children }) => {
     const initAuth = async () => {
       if (token) {
         try {
-          const res = await axios.get(`${API}/auth/me`, {
+          const res = await axios.get(`${AUTH_API}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setUser(res.data);
@@ -37,7 +40,7 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = async (email, password) => {
-    const res = await axios.post(`${API}/auth/login`, { email, password });
+    const res = await axios.post(`${AUTH_API}/auth/login`, { email, password });
     setToken(res.data.token);
     setUser(res.data.user);
     setIsAdmin(false);
@@ -47,7 +50,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (email, password, name, phone) => {
-    const res = await axios.post(`${API}/auth/register`, { email, password, name, phone });
+    const res = await axios.post(`${AUTH_API}/auth/register`, { email, password, name, phone });
     setToken(res.data.token);
     setUser(res.data.user);
     setIsAdmin(false);
@@ -57,13 +60,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   const adminLogin = async (username, password) => {
-    const res = await axios.post(`${API}/auth/admin`, { username, password });
+    const res = await axios.post(`${AUTH_API}/auth/admin`, { username, password });
     setToken(res.data.token);
     setUser({ id: 'admin', name: 'Admin', email: 'admin@mavecode.id' });
     setIsAdmin(true);
     localStorage.setItem('mavecode_token', res.data.token);
     localStorage.setItem('mavecode_is_admin', 'true');
     return res.data;
+  };
+
+  const googleLogin = async (credential) => {
+    try {
+      // Kirim credential (ID Token dari Google) ke backend Node.js (5005)
+      const res = await axios.post(`${AUTH_API}/auth/google`, { token: credential });
+
+      setToken(res.data.token);
+      setUser(res.data.user);
+      setIsAdmin(false);
+      localStorage.setItem('mavecode_token', res.data.token);
+      localStorage.setItem('mavecode_is_admin', 'false');
+      return res.data;
+    } catch (err) {
+      console.error('Google Login Error:', err);
+      toast.error('Login Google gagal. Silakan coba lagi.');
+      throw err;
+    }
   };
 
   const logout = () => {
@@ -75,7 +96,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAdmin, loading, login, register, adminLogin, logout }}>
+    <AuthContext.Provider value={{ user, token, isAdmin, loading, login, register, adminLogin, googleLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

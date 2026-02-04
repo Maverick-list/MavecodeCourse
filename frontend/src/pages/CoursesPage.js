@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Filter, X } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, Filter, X, Sparkles, Code, Globe, Smartphone, Server, Database, Cloud } from 'lucide-react';
 import axios from 'axios';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -17,6 +17,16 @@ import CourseCard from '../components/CourseCard';
 import { useFirebaseData } from '../context/FirebaseContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const CATEGORY_ICONS = {
+  web: Globe,
+  mobile: Smartphone,
+  backend: Server,
+  frontend: Code,
+  data: Database,
+  devops: Cloud,
+  default: Sparkles
+};
 
 export const CoursesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,13 +66,11 @@ export const CoursesPage = () => {
     };
 
     if (!firebaseLoading) {
-      // If Firebase has courses, use them; otherwise fallback to API
       if (isFirebaseConnected && firebaseCourses.length > 0) {
         setCourses(firebaseCourses);
         setCategories(firebaseCategories.length > 0 ? firebaseCategories : categories);
         setLoading(false);
       } else {
-        // Fallback to backend API
         fetchFromAPI();
       }
     }
@@ -97,135 +105,164 @@ export const CoursesPage = () => {
   const hasFilters = categoryFilter || levelFilter || priceFilter || search;
 
   return (
-    <div className="min-h-screen pt-24 pb-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-12"
-        >
-          <h1 className="font-heading font-bold text-4xl lg:text-5xl mb-4">Kursus</h1>
-          <p className="text-muted-foreground text-lg max-w-2xl">
-            Pilih dari berbagai kursus berkualitas untuk meningkatkan skill codingmu
-          </p>
+    <div className="min-h-screen bg-background">
+      {/* Colorful Hero Section */}
+      <div className="relative pt-32 pb-20 overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white rounded-b-[3rem] shadow-xl mb-12">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+        {/* Animated Background Icons */}
+        <motion.div animate={{ y: [0, -20, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="absolute top-20 right-20 text-white/10">
+          <Code size={120} />
+        </motion.div>
+        <motion.div animate={{ y: [0, 20, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }} className="absolute bottom-10 left-10 text-white/10">
+          <Database size={100} />
         </motion.div>
 
-        {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-card border border-border rounded-2xl p-4 mb-8"
-        >
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="font-heading font-bold text-4xl lg:text-6xl mb-6 shadow-text"
+          >
+            Jelajahi Dunia Coding
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-lg lg:text-xl text-white/90 max-w-2xl mx-auto mb-8 font-medium"
+          >
+            Temukan ribuan materi belajar interaktif dan mentor terbaik untuk karir impianmu.
+          </motion.p>
+
+          {/* Main Search Bar */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="max-w-2xl mx-auto relative group"
+          >
+            <div className="absolute inset-0 bg-white/20 rounded-full blur-xl group-hover:blur-2xl transition-all"></div>
+            <div className="relative flex items-center bg-white rounded-full shadow-lg p-2 pr-2">
+              <Search className="ml-4 w-6 h-6 text-indigo-500" />
               <Input
-                placeholder="Cari kursus..."
+                placeholder="Mau belajar apa hari ini? (Contoh: React, Python, Data Science)"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
+                className="border-0 shadow-none focus-visible:ring-0 text-slate-800 placeholder:text-slate-400 h-12 text-lg"
                 data-testid="course-search"
               />
-            </div>
-
-            {/* Category Filter */}
-            <Select value={categoryFilter || "all"} onValueChange={(v) => updateFilter('category', v === "all" ? "" : v)}>
-              <SelectTrigger className="w-full lg:w-48" data-testid="filter-category">
-                <SelectValue placeholder="Kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Kategori</SelectItem>
-                {categories.map(cat => (
-                  <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Level Filter */}
-            <Select value={levelFilter || "all"} onValueChange={(v) => updateFilter('level', v === "all" ? "" : v)}>
-              <SelectTrigger className="w-full lg:w-40" data-testid="filter-level">
-                <SelectValue placeholder="Level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Level</SelectItem>
-                <SelectItem value="beginner">Pemula</SelectItem>
-                <SelectItem value="intermediate">Menengah</SelectItem>
-                <SelectItem value="advanced">Lanjutan</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Price Filter */}
-            <Select value={priceFilter || "all"} onValueChange={(v) => updateFilter('price', v === "all" ? "" : v)}>
-              <SelectTrigger className="w-full lg:w-40" data-testid="filter-price">
-                <SelectValue placeholder="Harga" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Harga</SelectItem>
-                <SelectItem value="free">Gratis</SelectItem>
-                <SelectItem value="paid">Berbayar</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {hasFilters && (
-              <Button variant="ghost" onClick={clearFilters} className="gap-2" data-testid="clear-filters">
-                <X className="w-4 h-4" />
-                Reset
+              <Button className="rounded-full bg-indigo-600 hover:bg-indigo-700 px-8 h-12 font-bold transition-all hover:scale-105">
+                Cari
               </Button>
-            )}
-          </div>
-
-          {/* Active Filters */}
-          {hasFilters && (
-            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-              {categoryFilter && (
-                <Badge variant="secondary" className="gap-1">
-                  {categories.find(c => c.id === categoryFilter)?.name}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => updateFilter('category', '')} />
-                </Badge>
-              )}
-              {levelFilter && (
-                <Badge variant="secondary" className="gap-1">
-                  {levelFilter === 'beginner' ? 'Pemula' : levelFilter === 'intermediate' ? 'Menengah' : 'Lanjutan'}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => updateFilter('level', '')} />
-                </Badge>
-              )}
-              {priceFilter && (
-                <Badge variant="secondary" className="gap-1">
-                  {priceFilter === 'free' ? 'Gratis' : 'Berbayar'}
-                  <X className="w-3 h-3 cursor-pointer" onClick={() => updateFilter('price', '')} />
-                </Badge>
-              )}
             </div>
-          )}
-        </motion.div>
+          </motion.div>
+        </div>
+      </div>
 
-        {/* Results */}
-        <div className="mb-6 text-muted-foreground">
-          Menampilkan {filteredCourses.length} kursus
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        {/* Category Pills */}
+        <div className="mb-10 overflow-x-auto pb-4 hide-scrollbar">
+          <div className="flex gap-4 min-w-max px-2">
+            <Button
+              variant={!categoryFilter ? "default" : "outline"}
+              onClick={() => updateFilter('category', '')}
+              className={`rounded-full h-12 px-6 gap-2 ${!categoryFilter ? 'bg-indigo-600 hover:bg-indigo-700' : 'border-slate-200 hover:border-indigo-500 text-slate-600'}`}
+            >
+              <Sparkles className="w-5 h-5" />
+              Semua Topik
+            </Button>
+            {categories.map((cat) => {
+              const Icon = CATEGORY_ICONS[cat.icon] || CATEGORY_ICONS[cat.slug] || CATEGORY_ICONS.default;
+              const isActive = categoryFilter === cat.id;
+              return (
+                <Button
+                  key={cat.id}
+                  variant={isActive ? "default" : "outline"}
+                  onClick={() => updateFilter('category', cat.id)}
+                  className={`rounded-full h-12 px-6 gap-2 transition-all ${isActive
+                      ? 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200'
+                      : 'border-slate-200 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 bg-white'
+                    }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  {cat.name}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Additional Filters */}
+        <div className="flex flex-wrap gap-4 mb-8 items-center bg-card p-4 rounded-2xl border border-border shadow-sm">
+          <span className="text-sm font-semibold text-muted-foreground mr-2 uppercase tracking-wider flex items-center gap-2">
+            <Filter className="w-4 h-4" /> Filter:
+          </span>
+          <Select value={levelFilter || "all"} onValueChange={(v) => updateFilter('level', v === "all" ? "" : v)}>
+            <SelectTrigger className="w-[160px] rounded-xl border-slate-200 bg-white dark:bg-slate-900">
+              <SelectValue placeholder="Semua Level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Level</SelectItem>
+              <SelectItem value="beginner">Pemula</SelectItem>
+              <SelectItem value="intermediate">Menengah</SelectItem>
+              <SelectItem value="advanced">Lanjutan</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={priceFilter || "all"} onValueChange={(v) => updateFilter('price', v === "all" ? "" : v)}>
+            <SelectTrigger className="w-[160px] rounded-xl border-slate-200 bg-white dark:bg-slate-900">
+              <SelectValue placeholder="Semua Harga" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Harga</SelectItem>
+              <SelectItem value="free">Gratis</SelectItem>
+              <SelectItem value="paid">Berbayar</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasFilters && (
+            <Button variant="ghost" onClick={clearFilters} className="ml-auto text-red-500 hover:text-red-600 hover:bg-red-50">
+              <X className="w-4 h-4 mr-2" /> Reset Filter
+            </Button>
+          )}
+        </div>
+
+        {/* Results Info */}
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span className="w-2 h-8 bg-indigo-500 rounded-full inline-block"></span>
+            Daftar Kursus
+          </h2>
+          <Badge variant="outline" className="px-4 py-1.5 text-sm rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-0">
+            {filteredCourses.length} Kursus Tersedia
+          </Badge>
         </div>
 
         {/* Courses Grid */}
         {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-card border border-border rounded-2xl h-96 animate-pulse" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-card border border-border rounded-3xl h-[340px] animate-pulse shadow-sm" />
             ))}
           </div>
         ) : filteredCourses.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCourses.map((course, i) => (
               <CourseCard key={course.id} course={course} index={i} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <Filter className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="font-heading font-semibold text-xl mb-2">Tidak ada kursus ditemukan</h3>
-            <p className="text-muted-foreground mb-4">Coba ubah filter atau kata kunci pencarian</p>
-            <Button onClick={clearFilters}>Reset Filter</Button>
+          <div className="text-center py-24 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700">
+            <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Search className="w-10 h-10 text-indigo-500" />
+            </div>
+            <h3 className="font-heading font-bold text-2xl mb-3 text-slate-900 dark:text-white">Ups, Kursus Tidak Ditemukan</h3>
+            <p className="text-slate-500 mb-8 max-w-md mx-auto">
+              Kami tidak dapat menemukan kursus yang cocok dengan pencarianmu. Coba gunakan kata kunci lain atau reset filter.
+            </p>
+            <Button onClick={clearFilters} size="lg" className="bg-indigo-600 hover:bg-indigo-700 rounded-full px-8">
+              Lihat Semua Kursus
+            </Button>
           </div>
         )}
       </div>
