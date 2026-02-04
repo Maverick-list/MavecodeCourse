@@ -295,7 +295,7 @@ const BlockPage = () => {
     };
 
     return (
-        <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-[#0d1117] text-slate-300">
+        <div className="flex h-[calc(100vh-80px)] overflow-hidden bg-[#0d1117] text-slate-300 mt-20">
             {/* Activity Bar */}
             <div className="w-12 bg-[#161b22] border-r border-[#30363d] flex flex-col items-center py-4 gap-4">
                 <div className="p-2 bg-[#21262d] rounded-lg">
@@ -326,8 +326,8 @@ const BlockPage = () => {
                                 key={file.id}
                                 onClick={() => setActiveFile(file.name)}
                                 className={`w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-md transition-all ${activeFile === file.name
-                                        ? 'bg-[#21262d] text-white border-l-2 border-cyan-500'
-                                        : 'text-[#8b949e] hover:bg-[#161b22] hover:text-white'
+                                    ? 'bg-[#21262d] text-white border-l-2 border-cyan-500'
+                                    : 'text-[#8b949e] hover:bg-[#161b22] hover:text-white'
                                     }`}
                             >
                                 <file.icon className={`w-4 h-4 ${file.color}`} />
@@ -368,8 +368,8 @@ const BlockPage = () => {
                             key={file.id}
                             onClick={() => setActiveFile(file.name)}
                             className={`h-full px-4 flex items-center gap-2 text-xs border-r border-[#30363d] transition-all min-w-[120px] group ${activeFile === file.name
-                                    ? 'bg-[#0d1117] text-white border-t-2 border-t-cyan-500'
-                                    : 'bg-[#161b22] text-[#8b949e] hover:bg-[#1c2128] hover:text-white'
+                                ? 'bg-[#0d1117] text-white border-t-2 border-t-cyan-500'
+                                : 'bg-[#161b22] text-[#8b949e] hover:bg-[#1c2128] hover:text-white'
                                 }`}
                         >
                             <file.icon className={`w-4 h-4 ${file.color}`} />
@@ -510,10 +510,10 @@ const BlockPage = () => {
                             {terminalOutput.map((line, i) => (
                                 <div key={i} className="flex gap-2">
                                     <span className={`${line.type === 'system' ? 'text-cyan-500' :
-                                            line.type === 'success' ? 'text-green-500' :
-                                                line.type === 'error' ? 'text-red-500' :
-                                                    line.type === 'command' ? 'text-yellow-500' :
-                                                        'text-[#8b949e]'
+                                        line.type === 'success' ? 'text-green-500' :
+                                            line.type === 'error' ? 'text-red-500' :
+                                                line.type === 'command' ? 'text-yellow-500' :
+                                                    'text-[#8b949e]'
                                         }`}>
                                         {line.type === 'command' ? '$' : `[${line.type}]`}
                                     </span>
