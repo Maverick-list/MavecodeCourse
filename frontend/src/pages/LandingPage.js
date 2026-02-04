@@ -12,18 +12,24 @@ import { Badge } from '../components/ui/badge';
 import CourseCard from '../components/CourseCard';
 import ArticleCard from '../components/ArticleCard';
 import { useFirebaseData } from '../context/FirebaseContext';
+import webImg from '../assets/categories/web.png';
+import mobileImg from '../assets/categories/mobile.png';
+import backendImg from '../assets/categories/backend.png';
+import frontendImg from '../assets/categories/frontend.png';
+import dataImg from '../assets/categories/data.png';
+import devopsImg from '../assets/categories/devops.png';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const MENTOR_IMAGE = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/0hxoi5k4_53B2736F-666E-4CE5-8AB8-72D901786EB2.JPG";
 const HERO_BG = "https://images.unsplash.com/photo-1649451844813-3130d6f42f8a?crop=entropy&cs=srgb&fm=jpg&q=85";
 
-const categoryIcons = {
-  web: Globe,
-  mobile: Smartphone,
-  backend: Server,
-  frontend: Code,
-  data: BarChart3,
-  devops: Cloud,
+const categoryImages = {
+  web: webImg,
+  mobile: mobileImg,
+  backend: backendImg,
+  frontend: frontendImg,
+  data: dataImg,
+  devops: devopsImg,
 };
 
 const staggerContainer = {
@@ -68,7 +74,7 @@ export const LandingPage = () => {
   const mentorRef = useRef(null);
   const isMentorInView = useInView(mentorRef, { once: true, margin: "-100px" });
   const [typewriterText, setTypewriterText] = useState("");
-  const fullBio = "Full-Stack Developer dengan pengalaman lebih dari 5 tahun di industri teknologi. Passionate dalam berbagi ilmu dan membantu developer pemula mencapai potensi terbaik mereka.";
+  const fullBio = 'Fullstack & AI Engineer dengan pengalaman jasa website builder selama 5 bulan. Passionate dalam berbagi ilmu dan membantu developer pemula mencapai potensi terbaik mereka.';
 
   // Typewriter effect
   useEffect(() => {
@@ -129,9 +135,9 @@ export const LandingPage = () => {
   const leadMentor = mentor || {
     name: 'Firza Ilmi',
     title: 'Lead Mentor',
-    bio: 'Full-Stack Developer dengan pengalaman lebih dari 5 tahun di industri teknologi. Passionate dalam berbagi ilmu dan membantu developer pemula mencapai potensi terbaik mereka.',
+    bio: 'Fullstack & AI Engineer dengan pengalaman jasa website builder selama 5 bulan. Passionate dalam berbagi ilmu dan membantu developer pemula mencapai potensi terbaik mereka.',
     profileImage: MENTOR_IMAGE,
-    expertise: ['Senior Software Engineer', '500+ siswa telah dilatih', 'Expert di React, Node.js, Python', 'Active open source contributor']
+    expertise: ['Senior Fullstack Developer & Junior AI Engineer', '30+ siswa telah dilatih', 'Expert di Javascript, React, Node.js, Tailwind, Python', 'Active open source contributor']
   };
 
   return (
@@ -409,7 +415,7 @@ export const LandingPage = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {categories.map((category) => {
-              const Icon = categoryIcons[category.slug] || Code;
+              const imgSrc = categoryImages[category.slug];
               return (
                 <motion.div
                   key={category.id}
@@ -418,8 +424,14 @@ export const LandingPage = () => {
                 >
                   <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                  <div className="p-3 bg-primary/10 rounded-none group-hover:bg-primary/20 transition-colors">
-                    <Icon className="w-6 h-6 text-primary" />
+                  <div className="w-16 h-16 mb-2 overflow-hidden bg-primary/5 group-hover:bg-primary/10 transition-colors p-1 border border-primary/20">
+                    {imgSrc ? (
+                      <img src={imgSrc} alt={category.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                        <Code className="w-8 h-8 text-primary" />
+                      </div>
+                    )}
                   </div>
                   <span className="font-heading font-semibold text-sm uppercase tracking-wide group-hover:text-primary transition-colors">
                     {category.name}
