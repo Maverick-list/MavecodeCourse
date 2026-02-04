@@ -743,16 +743,88 @@ async def get_progress(course_id: str, user: dict = Depends(get_current_user)):
     return progress
 
 # ============ AI Chatbot ============
+import httpx
+
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'AIzaSyBF31srABxKOmh1pMvf2H3sSZK-Y8u9fG8')
+GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+
+SYSTEM_PROMPT = """Kamu adalah Mavecode AI, asisten cerdas untuk platform belajar coding Mavecode. Kepribadianmu:
+- Ramah, antusias, dan suportif seperti mentor coding yang berpengalaman
+- Berbicara dalam Bahasa Indonesia dengan gaya casual tapi profesional
+- Sering menggunakan emoji untuk membuat percakapan lebih friendly
+- Memberikan jawaban yang informatif tapi ringkas
+
+TENTANG MAVECODE:
+- Platform belajar coding #1 di Indonesia
+- Didirikan oleh Firza Ilmi, Full-Stack Developer berpengalaman
+- Menyediakan kursus berkualitas dengan harga terjangkau
+- Fitur: Club (komunitas), Block IDE (coding online), Focus Mode (Pomodoro timer)
+
+KURSUS TERSEDIA:
+1. "Full Stack JavaScript" - Rp 299.000 - Belajar React, Node.js (28 jam)
+2. "Python untuk Pemula" - Rp 199.000 - Dasar Python (20 jam)
+3. "React Native Mobile" - Rp 349.000 - Aplikasi iOS & Android (32 jam)
+4. "Machine Learning Dasar" - Rp 399.000 - AI/ML dengan Python (35 jam)
+5. "DevOps & Cloud" - Rp 449.000 - Docker, Kubernetes (40 jam)
+6. "UI/UX Design" - Rp 249.000 - Figma dan design (18 jam)
+
+ARTIKEL TERBARU:
+- "Masa Depan AI 2025" - Trend AI generative
+- "Prompt Engineering" - Cara berkomunikasi dengan LLM
+- "Tips Belajar Coding" - 10 tips untuk pemula
+
+Jika user bertanya tentang kursus yang cocok, tanyakan level dan tujuan mereka dulu."""
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_with_ai(data: ChatMessage):
     session_id = data.session_id or str(uuid.uuid4())
     
-    # Temporary fallback while AI library is being fixed
-    return ChatResponse(
-        response="Maaf, fitur AI sedang dalam pemeliharaan. Silakan hubungi kami via WhatsApp: +62 851 9176 9521",
-        session_id=session_id
-    )
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{GEMINI_URL}?key={GEMINI_API_KEY}",
+                json={
+                    "contents": [
+                        {"role": "user", "parts": [{"text": SYSTEM_PROMPT}]},
+                        {"role": "model", "parts": [{"text": "Saya mengerti! Saya adalah Mavecode AI, siap membantu! 👋"}]},
+                        {"role": "user", "parts": [{"text": data.message}]}
+                    ],
+                    "generationConfig": {
+                        "temperature": 0.9,
+                        "topK": 40,
+                        "topP": 0.95,
+                        "maxOutputTokens": 1024
+                    }
+                }
+            )
+            
+            result = response.json()
+            print(f"Gemini Response Status: {response.status_code}")
+            
+            if response.status_code == 429:
+                return ChatResponse(
+                    response="Maaf, AI sedang sibuk melayani banyak pengguna. ⏳ Coba lagi dalam 1-2 menit ya!",
+                    session_id=session_id
+                )
+            
+            if "candidates" in result and result["candidates"]:
+                ai_response = result["candidates"][0]["content"]["parts"][0]["text"]
+                return ChatResponse(response=ai_response, session_id=session_id)
+            elif "error" in result:
+                print(f"Gemini Error: {result['error']}")
+                return ChatResponse(
+                    response=f"Maaf, ada masalah teknis. 😅 Detail: {result['error'].get('message', 'Unknown')}",
+                    session_id=session_id
+                )
+            else:
+                raise Exception(f"Invalid response: {result}")
+                
+    except Exception as e:
+        print(f"Gemini API Error: {e}")
+        return ChatResponse(
+            response="Maaf, aku sedang mengalami gangguan koneksi. 😅 Coba lagi ya!",
+            session_id=session_id
+        )
 
 # ============ Categories ============
 

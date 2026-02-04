@@ -1,67 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Bot, User, Mic, MicOff, Volume2, VolumeX, Loader2, Sparkles, ExternalLink } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Mic, MicOff, Volume2, VolumeX, Loader2, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ScrollArea } from './ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import axios from 'axios';
 
-const GEMINI_API_KEY = 'AIzaSyBF31srABxKOmh1pMvf2H3sSZK-Y8u9fG8';
-const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-
-// System prompt for Mavecode AI
-const SYSTEM_PROMPT = `Kamu adalah Mavecode AI, asisten cerdas untuk platform belajar coding Mavecode. Kepribadianmu:
-- Ramah, antusias, dan suportif seperti mentor coding yang berpengalaman
-- Berbicara dalam Bahasa Indonesia dengan gaya casual tapi profesional
-- Sering menggunakan emoji untuk membuat percakapan lebih friendly
-- Memberikan jawaban yang informatif tapi ringkas
-
-TENTANG MAVECODE:
-- Platform belajar coding #1 di Indonesia
-- Didirikan oleh Firza Ilmi, Full-Stack Developer berpengalaman
-- Menyediakan kursus berkualitas dengan harga terjangkau
-- Fitur: Club (komunitas Discord-like), Block IDE (coding online), Focus Mode (Pomodoro timer)
-
-KURSUS TERSEDIA:
-1. "Full Stack JavaScript" - Rp 299.000 - Belajar React, Node.js, MongoDB (28 jam)
-2. "Python untuk Pemula" - Rp 199.000 - Dasar Python hingga automation (20 jam)
-3. "React Native Mobile" - Rp 349.000 - Buat aplikasi iOS & Android (32 jam)
-4. "Machine Learning Dasar" - Rp 399.000 - AI/ML dengan Python (35 jam)
-5. "DevOps & Cloud" - Rp 449.000 - Docker, Kubernetes, AWS (40 jam)
-6. "UI/UX Design" - Rp 249.000 - Figma dan design system (18 jam)
-
-ARTIKEL TERBARU:
-- "Masa Depan AI 2025" - Trend AI generative
-- "Prompt Engineering" - Cara berkomunikasi dengan LLM
-- "Tips Belajar Coding" - 10 tips untuk pemula
-- "Trend Teknologi 2025" - Skill yang dicari
-- "Portfolio Developer" - Cara membuat portfolio menarik
-
-KEMAMPUANMU:
-1. Merekomendasikan kursus berdasarkan kebutuhan user
-2. Menjawab pertanyaan tentang teknologi dan programming
-3. Memberikan tips belajar coding
-4. Membantu navigasi website
-5. Menjelaskan fitur Mavecode
-
-PANDUAN NAVIGASI (gunakan format [NAVIGATE:/path]):
-- Halaman Kursus: [NAVIGATE:/courses]
-- Kursus Specific: [NAVIGATE:/courses/{id}]
-- Artikel: [NAVIGATE:/articles]
-- Club: [NAVIGATE:/club]
-- Block IDE: [NAVIGATE:/block]
-- Dashboard: [NAVIGATE:/dashboard]
-- Harga: [NAVIGATE:/pricing]
-
-Jika user bertanya tentang kursus yang cocok, tanyakan dulu:
-1. Level mereka (pemula/menengah/mahir)
-2. Bahasa/teknologi yang diminati
-3. Tujuan belajar (kerja/freelance/proyek)
-
-Setelah itu rekomendasikan dan tawarkan untuk membawa mereka ke halaman kursus.
-
-PENTING: Jika user menyapa dengan "Hi Mavecode" atau sejenisnya, balas dengan sapaan hangat!`;
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const Chatbot = () => {
   const navigate = useNavigate();
@@ -71,10 +18,10 @@ export const Chatbot = () => {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [isWakeWordActive, setIsWakeWordActive] = useState(false);
   const scrollRef = useRef(null);
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
@@ -90,27 +37,14 @@ export const Chatbot = () => {
 
       recognitionRef.current.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
-        if (isWakeWordActive) {
-          // Check for wake word
-          if (transcript.toLowerCase().includes('hi mavecode') ||
-            transcript.toLowerCase().includes('hai mavecode') ||
-            transcript.toLowerCase().includes('halo mavecode')) {
-            setIsOpen(true);
-            setIsWakeWordActive(false);
-            speak('Hai! Ada yang bisa aku bantu?');
-          }
-        } else {
-          setInput(transcript);
-          // Auto-send after voice input
-          setTimeout(() => sendMessageWithText(transcript), 500);
-        }
+        setInput(transcript);
         setIsListening(false);
       };
 
       recognitionRef.current.onerror = () => setIsListening(false);
       recognitionRef.current.onend = () => setIsListening(false);
     }
-  }, [isWakeWordActive]);
+  }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -123,8 +57,6 @@ export const Chatbot = () => {
   // Text to Speech
   const speak = useCallback((text) => {
     if (!voiceEnabled || !synthRef.current) return;
-
-    // Cancel any ongoing speech
     synthRef.current.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -132,7 +64,6 @@ export const Chatbot = () => {
     utterance.rate = 1.1;
     utterance.pitch = 1;
 
-    // Try to find Indonesian voice
     const voices = synthRef.current.getVoices();
     const indonesianVoice = voices.find(v => v.lang.includes('id')) || voices.find(v => v.lang.includes('en'));
     if (indonesianVoice) utterance.voice = indonesianVoice;
@@ -166,68 +97,39 @@ export const Chatbot = () => {
     return content;
   };
 
-  // Send message to Gemini
-  const sendMessageWithText = async (text) => {
-    if (!text.trim() || loading) return;
+  // Send message via backend API
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
 
-    const userMessage = text.trim();
+    const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
 
     try {
-      // Build conversation history
-      const history = messages.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content }]
-      }));
-
-      const response = await fetch(`${API_URL}?key=${GEMINI_API_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-            { role: 'model', parts: [{ text: 'Saya mengerti! Saya adalah Mavecode AI, siap membantu dengan ramah dan informatif. 👋' }] },
-            ...history,
-            { role: 'user', parts: [{ text: userMessage }] }
-          ],
-          generationConfig: {
-            temperature: 0.9,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          }
-        })
+      const res = await axios.post(`${API}/chat`, {
+        message: userMessage,
+        session_id: sessionId
       });
 
-      const data = await response.json();
+      setSessionId(res.data.session_id);
+      let aiResponse = handleNavigation(res.data.response);
 
-      if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-        let aiResponse = data.candidates[0].content.parts[0].text;
-        aiResponse = handleNavigation(aiResponse);
+      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
 
-        setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
-
-        // Speak the response
-        if (voiceEnabled) {
-          speak(aiResponse.substring(0, 300)); // Limit speech length
-        }
-      } else {
-        throw new Error('Invalid response');
+      if (voiceEnabled) {
+        speak(aiResponse.substring(0, 300));
       }
     } catch (err) {
-      console.error('Gemini API Error:', err);
+      console.error('Chat API Error:', err);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Maaf, aku sedang mengalami gangguan teknis. 😅 Coba lagi ya, atau hubungi tim kami via WhatsApp: +62 851 9176 9521'
+        content: 'Maaf, aku sedang mengalami gangguan teknis. 😅 Coba lagi ya!'
       }]);
     } finally {
       setLoading(false);
     }
   };
-
-  const sendMessage = () => sendMessageWithText(input);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -242,6 +144,14 @@ export const Chatbot = () => {
     { label: '💰 Info Harga', message: 'Berapa harga kursus di Mavecode?' },
     { label: '🚀 Cara Mulai', message: 'Bagaimana cara mulai belajar di Mavecode?' },
   ];
+
+  const sendQuickMessage = (message) => {
+    setInput(message);
+    setTimeout(() => {
+      const fakeEvent = { key: 'Enter', shiftKey: false, preventDefault: () => { } };
+      handleKeyPress(fakeEvent);
+    }, 100);
+  };
 
   return (
     <>
@@ -314,7 +224,7 @@ export const Chatbot = () => {
                 {quickActions.map((action, i) => (
                   <button
                     key={i}
-                    onClick={() => sendMessageWithText(action.message)}
+                    onClick={() => sendQuickMessage(action.message)}
                     className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs rounded-full whitespace-nowrap transition-colors"
                   >
                     {action.label}
@@ -398,7 +308,7 @@ export const Chatbot = () => {
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground text-center mt-2">
-                💡 Tip: Katakan "Hi Mavecode" untuk mengaktifkan saya
+                🤖 Powered by Gemini AI
               </p>
             </div>
           </motion.div>
