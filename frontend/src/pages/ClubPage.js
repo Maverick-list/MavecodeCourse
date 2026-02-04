@@ -81,6 +81,49 @@ const ClubPage = () => {
     const messagesEndRef = useRef(null);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
+    const videoRef = useRef(null);
+    const localStreamRef = useRef(null);
+
+    // Start/Stop camera when video is toggled
+    useEffect(() => {
+        const startCamera = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: !isMuted });
+                localStreamRef.current = stream;
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+                toast.success('Kamera aktif!');
+            } catch (err) {
+                toast.error('Gagal mengakses kamera');
+                setIsVideoOn(false);
+            }
+        };
+
+        const stopCamera = () => {
+            if (localStreamRef.current) {
+                localStreamRef.current.getTracks().forEach(track => track.stop());
+                localStreamRef.current = null;
+            }
+        };
+
+        if (isVideoOn && showVideoCall) {
+            startCamera();
+        } else {
+            stopCamera();
+        }
+
+        return () => stopCamera();
+    }, [isVideoOn, showVideoCall]);
+
+    // Update audio mute state
+    useEffect(() => {
+        if (localStreamRef.current) {
+            localStreamRef.current.getAudioTracks().forEach(track => {
+                track.enabled = !isMuted;
+            });
+        }
+    }, [isMuted]);
 
     // Simulate real-time status changes
     useEffect(() => {
@@ -302,17 +345,25 @@ const ClubPage = () => {
                         <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} className="bg-card rounded-2xl w-full max-w-4xl overflow-hidden">
                             <div className="p-4 border-b border-border flex justify-between"><div><h2 className="font-bold text-lg">Live Coding Room</h2><p className="text-sm text-muted-foreground">{getUsersInVoice('live-coding').length + 1} peserta</p></div>
                                 <Button variant="ghost" size="icon" onClick={() => { setShowVideoCall(false); handleJoinVoice('live-coding'); }}><X className="h-5 w-5" /></Button></div>
-                            <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto">
                                 {getUsersInVoice('live-coding').map(u => (
                                     <div key={u.id} className="aspect-video bg-slate-900 rounded-xl relative flex items-center justify-center">
                                         <Avatar className="h-16 w-16"><AvatarImage src={u.avatar} /></Avatar>
                                         <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/50 rounded text-xs">{u.name}</div>
+                                        <div className="absolute top-2 right-2 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
                                     </div>
                                 ))}
-                                <div className="aspect-video bg-slate-900 rounded-xl relative flex items-center justify-center border-2 border-primary">
-                                    {isVideoOn ? <div className="text-4xl">📹</div> : <Avatar className="h-16 w-16"><AvatarImage src={profileData.avatar} /></Avatar>}
+                                <div className="aspect-video bg-slate-900 rounded-xl relative overflow-hidden border-2 border-primary">
+                                    {isVideoOn ? (
+                                        <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <Avatar className="h-16 w-16"><AvatarImage src={profileData.avatar} /></Avatar>
+                                        </div>
+                                    )}
                                     <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/50 rounded text-xs">Anda</div>
                                     {isMuted && <MicOff className="absolute top-2 right-2 w-4 h-4 text-red-400" />}
+                                    {isVideoOn && <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 bg-red-500 rounded text-[10px] font-bold"><div className="w-2 h-2 bg-white rounded-full animate-pulse" />LIVE</div>}
                                 </div>
                             </div>
                             <div className="p-4 border-t border-border flex justify-center gap-4">
