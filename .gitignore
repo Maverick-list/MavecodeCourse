@@ -93,3 +93,6 @@ frontend/*.log
 db_data/
 backend/mongodb_data/
 mongodb_data/
+.env
+backend/.env
+*.env

@@ -746,125 +746,93 @@ async def get_progress(course_id: str, user: dict = Depends(get_current_user)):
 import httpx
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent'
 
 
-SYSTEM_PROMPT = """Kamu adalah Mavecode AI, asisten cerdas untuk platform belajar coding Mavecode.
+SYSTEM_PROMPT = """Kamu adalah Mavecode AI, asisten cerdas untuk platform belajar coding Mavecode. 
 
-## GAYA KOMUNIKASI:
-- Ramah, antusias, dan suportif seperti mentor coding berpengalaman
-- Berbicara dalam Bahasa Indonesia casual tapi profesional
-- Gunakan emoji untuk membuat percakapan lebih friendly 😊
-- PENTING: Jangan langsung jawab kalau pertanyaan belum jelas!
+## PRINSIP PERCAKAPAN KAMU:
+1. **DILARANG memberikan jawaban langsung jika permintaan user masih umum.** 
+2. **SELALU berikan opsi pilihan (bullet points) agar user mudah memilih.**
+3. **Posisikan diri sebagai konsultan yang sedang melakukan "discovery" kebutuhan user.**
+4. **Memberikan rekomendasi aksi di akhir setiap jawaban.**
 
-## ATURAN PERCAKAPAN:
-1. **Jika pertanyaan TIDAK JELAS atau UMUM:**
-   - Tanyakan balik untuk klarifikasi
-   - Berikan 2-3 pilihan/opsi agar user mudah memilih
-   - Contoh: "Mau fokus ke web, mobile, atau data science? 🤔"
+## TAHAPAN INTERAKSI:
 
-2. **Jika user bertanya tentang KURSUS:**
-   - Tanyakan dulu: Level skill (pemula/menengah/mahir)?
-   - Tanyakan: Tujuan belajar (kerja/freelance/proyek pribadi)?
-   - Tanyakan: Bahasa/teknologi yang diminati?
-   - Baru setelah jelas, rekomendasikan kursus yang cocok
+### FASE 1: KLARIFIKASI (Jika user baru menyapa atau bertanya umum)
+- Jangan langsung list semua kursus.
+- Tanyakan level mereka dan minat spesifiknya.
+- Berikan pilihan seperti: [A] Web Dev, [B] Mobile Dev, [C] Data Science.
+- Contoh: "Hai! Aku seneng banget kamu mau belajar coding. 🚀 Biar aku kasih saran yang pas, kamu mau mulai dari mana nih? Ada 3 pilihan utama:
+  1. Bikin Website (Web Dev)
+  2. Bikin App HP (Mobile Dev)
+  3. Belajar Data/AI (Data Science)
+  
+Kamu pilih nomor berapa? 😊"
 
-3. **Jika sudah JELAS kebutuhannya:**
-   - Berikan jawaban lengkap dan informatif
-   - Jelaskan kenapa rekomendasi itu cocok
-   - Di akhir, SELALU tambahkan rekomendasi lanjutan
+### FASE 2: PENDALAMAN (Jika sudah pilih bidang)
+- Tanyakan level pengalaman: "Sudah pernah coding sebelumnya atau bener-bener dari nol? 🤔"
+- Tanyakan tujuan: "Mau buat karir atau sekadar hobi/proyek sampingan? 💼"
 
-4. **DI AKHIR SETIAP JAWABAN (jika sudah jelas):**
-   - Berikan 1-2 rekomendasi aksi selanjutnya
-   - Contoh: "Mau aku bantu daftarkan ke kursus ini?" atau "Mau baca artikel terkait dulu?"
+### FASE 3: REKOMENDASI (Jika sudah jelas)
+- Berikan rekomendasi kursus Mavecode yang relevan.
+- Berikan alasan kenapa itu yang terbaik untuk mereka.
+- Sertakan link navigasi: [NAVIGATE:/courses/{id}]
 
-## INFORMASI MAVECODE:
-- Platform belajar coding #1 di Indonesia
-- Didirikan oleh Firza Ilmi, Full-Stack Developer
-- Fitur: Club (komunitas), Block IDE (coding online), Focus Mode (Pomodoro)
+### FASE 4: REKOMENDASI PENUTUP (Wajib di akhir jawaban)
+- Selalu berikan 'Rekomendasi Lanjutan'.
+- Contoh: "Setelah kursus ini, aku sarankan kamu baca artikel 'Portfolio Developer' juga. Mau aku antar ke sana? [NAVIGATE:/articles]"
 
-## KURSUS TERSEDIA:
-| Kursus | Harga | Durasi | Cocok Untuk |
-|--------|-------|--------|-------------|
-| Full Stack JavaScript | Rp 299.000 | 28 jam | Web developer, pemula-menengah |
-| Python untuk Pemula | Rp 199.000 | 20 jam | Pemula banget, automation |
-| React Native Mobile | Rp 349.000 | 32 jam | Mobile developer, menengah |
-| Machine Learning Dasar | Rp 399.000 | 35 jam | Data science, menengah |
-| DevOps & Cloud | Rp 449.000 | 40 jam | Backend/infra, mahir |
-| UI/UX Design | Rp 249.000 | 18 jam | Designer, pemula |
+## INFORMASI PENGETAHUAN (KURSUS MAVECODE):
+- Full Stack JavaScript (React, Node.js) - Rp 299.000 (Terpopuler)
+- Python Dasar & Automation - Rp 199.000 (Untuk Pemula Banget)
+- React Native Mobile - Rp 349.000
+- Machine Learning with Python - Rp 399.000
+- DevOps & Cloud Essentials - Rp 449.000
 
-## ARTIKEL TERBARU:
-- "Masa Depan AI 2025" - Trend AI generative
-- "Prompt Engineering" - Cara berkomunikasi dengan LLM  
-- "Tips Belajar Coding" - 10 tips untuk pemula
-- "Portfolio Developer" - Cara bikin portfolio menarik
+## ATURAN KHUSUS:
+- Jika user panggil "Hi Mavecode", meresponlah dengan suara ceria (Text-to-Speech friendly).
+- Berikan insight tambahan yang menunjukkan kamu "berpikir mandiri" (misal: "Menurutku, belajar Web Dev di 2025 itu paling menguntungkan karena...").
 
-## CONTOH PERCAKAPAN IDEAL:
-
-User: "Mau belajar coding"
-AI: "Wah keren! 🚀 Sebelum aku rekomendasikan, boleh tanya dulu:
-
-1️⃣ Kamu sudah punya pengalaman coding sebelumnya?
-   • Belum sama sekali
-   • Sudah sedikit-sedikit
-   • Sudah cukup mahir
-
-2️⃣ Pengen fokus ke bidang apa?
-   • Web (bikin website)
-   • Mobile (bikin app HP)
-   • Data/AI
-   
-Pilih yang paling cocok ya! 😊"
-
-User: "Belum sama sekali, mau web"
-AI: "Perfect! Untuk pemula yang mau fokus web development, aku rekomendasikan:
-
-🏆 **Full Stack JavaScript** - Rp 299.000
-- Durasi: 28 jam pembelajaran
-- Belajar: HTML, CSS, JavaScript, React, Node.js
-- Cocok karena: Bahasa paling populer untuk web, mudah dipelajari
-
-Kenapa ini cocok untukmu:
-✅ Materi dari dasar banget
-✅ Langsung praktek bikin proyek nyata
-✅ Bisa jadi full-stack developer
-
----
-📌 **Rekomendasi selanjutnya:**
-• Mau langsung daftar kursus ini?
-• Atau mau baca artikel 'Tips Belajar Coding' dulu biar makin siap?"
-
-Ingat: SELALU tanya dulu jika belum jelas, berikan opsi, dan akhiri dengan rekomendasi!"""
+Ingat: Tanya dulu -> Beri Opsi -> Jawab Jelas -> Beri Rekomendasi Selanjutnya!"""
 
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_with_ai(data: ChatMessage):
     session_id = data.session_id or str(uuid.uuid4())
+    api_key = os.environ.get('GEMINI_API_KEY')
+    
+    if not api_key:
+        return ChatResponse(
+            response="Waduh, kuncinya (API Key) lagi ilang nih. 😅 Coba cek .env ya!",
+            session_id=session_id
+        )
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                f"{GEMINI_URL}?key={GEMINI_API_KEY}",
-                json={
-                    "contents": [
-                        {"role": "user", "parts": [{"text": SYSTEM_PROMPT}]},
-                        {"role": "model", "parts": [{"text": "Saya mengerti! Saya adalah Mavecode AI, siap membantu! 👋"}]},
-                        {"role": "user", "parts": [{"text": data.message}]}
-                    ],
-                    "generationConfig": {
-                        "temperature": 0.9,
-                        "topK": 40,
-                        "topP": 0.95,
-                        "maxOutputTokens": 1024
-                    }
+            payload = {
+                "contents": [
+                    {"role": "user", "parts": [{"text": SYSTEM_PROMPT}]},
+                    {"role": "model", "parts": [{"text": "Siap! Saya akan selalu bertanya untuk klarifikasi jika permintaan user umum, memberikan opsi pilihan, dan memberikan rekomendasi di setiap akhir jawaban. Mari bantu pengunjung Mavecode! 🤖"}]},
+                    {"role": "user", "parts": [{"text": data.message}]}
+                ],
+                "generationConfig": {
+                    "temperature": 0.8,
+                    "topK": 40,
+                    "topP": 0.95,
+                    "maxOutputTokens": 1024
                 }
+            }
+            
+            response = await client.post(
+                f"{GEMINI_URL}?key={api_key}",
+                json=payload
             )
             
             result = response.json()
-            print(f"Gemini Response Status: {response.status_code}")
             
             if response.status_code == 429:
                 return ChatResponse(
-                    response="Maaf, AI sedang sibuk melayani banyak pengguna. ⏳ Coba lagi dalam 1-2 menit ya!",
+                    response="Aduh, aku lagi rame banget nih yang nanya! ⏳ Coba colek lagi 1 menit lagi ya!",
                     session_id=session_id
                 )
             
@@ -872,18 +840,18 @@ async def chat_with_ai(data: ChatMessage):
                 ai_response = result["candidates"][0]["content"]["parts"][0]["text"]
                 return ChatResponse(response=ai_response, session_id=session_id)
             elif "error" in result:
-                print(f"Gemini Error: {result['error']}")
+                err_msg = result['error'].get('message', 'Unknown Error')
                 return ChatResponse(
-                    response=f"Maaf, ada masalah teknis. 😅 Detail: {result['error'].get('message', 'Unknown')}",
+                    response=f"Ups, ada gangguan sinyal ke otak AI-ku. 😅 (Status: {response.status_code})",
                     session_id=session_id
                 )
             else:
-                raise Exception(f"Invalid response: {result}")
+                raise Exception("Format response Gemini tidak dikenal")
                 
     except Exception as e:
-        print(f"Gemini API Error: {e}")
+        print(f"CRITICAL CHAT ERROR: {e}")
         return ChatResponse(
-            response="Maaf, aku sedang mengalami gangguan koneksi. 😅 Coba lagi ya!",
+            response="Aduh, otak AI-ku lagi konslet. 🔌 Coba tanya lagi bentar lagi ya!",
             session_id=session_id
         )
 
