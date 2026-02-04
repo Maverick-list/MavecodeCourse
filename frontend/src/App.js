@@ -7,6 +7,8 @@ import { FirebaseProvider } from './context/FirebaseContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Chatbot from './components/Chatbot';
+import { FocusModeProvider } from './context/FocusModeContext';
+import FocusModeWidget from './components/FocusModeWidget';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -130,6 +132,7 @@ const AppContent = () => {
         <Route path="*" element={<MainLayout><NotFoundPage /></MainLayout>} />
       </Routes>
       <Toaster position="top-center" richColors />
+      <FocusModeWidget />
     </BrowserRouter>
   );
 };
@@ -176,7 +179,9 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <FirebaseProvider>
-            <AppContent />
+            <FocusModeProvider>
+              <AppContent />
+            </FocusModeProvider>
           </FirebaseProvider>
         </AuthProvider>
       </ThemeProvider>

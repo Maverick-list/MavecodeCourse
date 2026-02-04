@@ -10,15 +10,15 @@ import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Badge } from '../components/ui/badge';
 import { useAuth } from '../context/AppContext';
-import PomodoroTimer from '../components/PomodoroTimer';
+import { useFocusMode } from '../context/FocusModeContext';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const DashboardPage = () => {
   const { user, token } = useAuth();
+  const { openFocusMode } = useFocusMode();
   const [courses, setCourses] = useState([]);
   const [stats, setStats] = useState({ courses_enrolled: 0, hours_learned: 0, certificates: 0 });
-  const [showPomodoro, setShowPomodoro] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export const DashboardPage = () => {
           <div className="flex gap-3 mt-6 md:mt-0">
             <Button
               variant="outline"
-              onClick={() => setShowPomodoro(true)}
+              onClick={openFocusMode}
               className="gap-2 border-primary/20 hover:border-primary hover:bg-primary/10 transition-all duration-300"
               data-testid="pomodoro-btn"
             >
@@ -247,9 +247,6 @@ export const DashboardPage = () => {
           </div>
         </motion.section>
       </div>
-
-      {/* Pomodoro Modal */}
-      {showPomodoro && <PomodoroTimer onClose={() => setShowPomodoro(false)} />}
     </div>
   );
 };
