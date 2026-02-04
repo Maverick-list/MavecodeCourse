@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
   BookOpen, Clock, Play, Award, TrendingUp, Calendar,
-  ChevronRight, Timer
+  ChevronRight, Timer, Bookmark, BookmarkX, FileText
 } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
@@ -18,6 +18,7 @@ export const DashboardPage = () => {
   const { user, token } = useAuth();
   const { openFocusMode } = useFocusMode();
   const [courses, setCourses] = useState([]);
+  const [savedArticles, setSavedArticles] = useState([]);
   const [stats, setStats] = useState({ courses_enrolled: 0, hours_learned: 0, certificates: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +27,14 @@ export const DashboardPage = () => {
       try {
         const coursesRes = await axios.get(`${API}/courses`);
         setCourses(coursesRes.data.slice(0, 4));
+
+        // Fetch saved articles
+        const savedSlugs = JSON.parse(localStorage.getItem('mavecode_saved_articles') || '[]');
+        if (savedSlugs.length > 0) {
+          const articlesRes = await axios.get(`${API}/articles`);
+          const saved = articlesRes.data.filter(a => savedSlugs.includes(a.slug));
+          setSavedArticles(saved);
+        }
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
       } finally {
@@ -34,6 +43,13 @@ export const DashboardPage = () => {
     };
     fetchData();
   }, [token]);
+
+  const removeSavedArticle = (slug) => {
+    const saved = JSON.parse(localStorage.getItem('mavecode_saved_articles') || '[]');
+    const updated = saved.filter(s => s !== slug);
+    localStorage.setItem('mavecode_saved_articles', JSON.stringify(updated));
+    setSavedArticles(prev => prev.filter(a => a.slug !== slug));
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-16 relative overflow-hidden">
@@ -187,6 +203,66 @@ export const DashboardPage = () => {
               <p className="text-muted-foreground mb-6 max-w-sm mx-auto">Mulai perjalanan codingmu sekarang dengan memilih kursus pertamamu.</p>
               <Button asChild size="lg" className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25">
                 <Link to="/courses">Jelajahi Katalog</Link>
+              </Button>
+            </div>
+          )}
+        </motion.section>
+
+        {/* Saved Articles */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mb-12"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-heading font-bold text-2xl flex items-center gap-2">
+              <Bookmark className="w-5 h-5 text-amber-400 fill-amber-400" />
+              Artikel Tersimpan
+            </h2>
+            <Link to="/articles" className="text-muted-foreground text-sm hover:text-white transition-colors">
+              Lihat Semua Artikel
+            </Link>
+          </div>
+
+          {savedArticles.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {savedArticles.map((article, i) => (
+                <motion.div
+                  key={article.slug}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-card/40 backdrop-blur-md border border-white/5 rounded-xl p-4 hover:border-primary/30 transition-all group relative"
+                >
+                  <button
+                    onClick={() => removeSavedArticle(article.slug)}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
+                    title="Hapus dari bookmark"
+                  >
+                    <BookmarkX className="w-4 h-4" />
+                  </button>
+                  <Link to={`/articles/${article.slug}`} className="block">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">{article.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{article.category}</p>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-card/20 border border-dashed border-white/10 rounded-xl p-8 text-center">
+              <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-muted-foreground">Belum ada artikel tersimpan</p>
+              <p className="text-sm text-muted-foreground/60 mt-1">Klik tombol "Simpan" di artikel untuk menyimpannya</p>
+              <Button asChild variant="outline" className="mt-4">
+                <Link to="/articles">Jelajahi Artikel</Link>
               </Button>
             </div>
           )}
