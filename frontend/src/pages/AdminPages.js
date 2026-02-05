@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, FileText, Video, Users,
-  Settings, LogOut, Plus, Pencil, Trash2, Eye, Menu, X
+  Settings, LogOut, Plus, Pencil, Trash2, Eye, Menu, X, Sun, Moon
 } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
@@ -39,7 +39,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '../components/ui/alert-dialog';
-import { useAuth } from '../context/AppContext';
+import { useAuth, useTheme } from '../context/AppContext';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -56,6 +56,7 @@ const sidebarLinks = [
 
 export const AdminLayout = () => {
   const { logout, isAdmin } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -81,9 +82,14 @@ export const AdminLayout = () => {
           <img src={LOGO_URL} alt="Mavecode" className="h-8 w-8 rounded-lg" />
           <span className="font-heading font-bold">Admin</span>
         </Link>
-        <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={toggleTheme} title={isDark ? 'Mode Siang' : 'Mode Malam'}>
+            {isDark ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-slate-600" />}
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
+        </div>
       </div>
 
       {/* Sidebar */}
@@ -119,6 +125,23 @@ export const AdminLayout = () => {
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-border">
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground w-full transition-colors mb-2"
+          >
+            {isDark ? (
+              <>
+                <Sun className="w-5 h-5 text-amber-500" />
+                Mode Siang
+              </>
+            ) : (
+              <>
+                <Moon className="w-5 h-5 text-slate-600" />
+                Mode Malam
+              </>
+            )}
+          </button>
           <Link
             to="/"
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground transition-colors mb-2"
