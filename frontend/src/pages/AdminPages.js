@@ -327,23 +327,63 @@ export const AdminDashboard = () => {
         </div>
 
         <div className="bg-card border border-border rounded-2xl p-6">
-          <h2 className="font-heading font-semibold text-lg mb-4">Seed Data</h2>
+          <h2 className="font-heading font-semibold text-lg mb-4">📦 Template Data</h2>
           <p className="text-muted-foreground text-sm mb-4">
-            Generate sample data untuk testing
+            Isi website dengan konten template profesional. Data ini akan menggantikan konten yang ada.
           </p>
-          <Button
-            onClick={async () => {
-              try {
-                await axios.post(`${API}/seed`);
-                toast.success('Seed data berhasil!');
-              } catch (err) {
-                toast.error('Gagal generate seed data');
-              }
-            }}
-            variant="outline"
-          >
-            Generate Seed Data
-          </Button>
+          <div className="text-sm text-muted-foreground mb-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />
+              <span><strong>6 Kursus:</strong> JavaScript, React.js, Python, Node.js, HTML/CSS, Flutter</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-green-500" />
+              <span><strong>5 Artikel:</strong> AI, Prompt Engineering, Tips Coding, Trend 2025, Portfolio</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-yellow-500" />
+              <span><strong>5 FAQ:</strong> Pemula, Premium, Sertifikat, Akses, Support</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Video className="w-4 h-4 text-purple-500" />
+              <span><strong>2 Live Class:</strong> React Todo App, Q&A Karir Developer</span>
+            </div>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <Plus className="w-4 h-4" />
+                Masukkan Template Data
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Masukkan Template Data?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Ini akan mengganti semua kursus, artikel, FAQ, dan live class yang ada dengan data template baru. Aksi ini tidak dapat dibatalkan.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Batal</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    try {
+                      await axios.post(`${API}/seed`, {}, {
+                        headers: { Authorization: `Bearer ${token}` }
+                      });
+                      toast.success('Template data berhasil dimasukkan! Refresh halaman untuk melihat perubahan.');
+                      window.location.reload();
+                    } catch (err) {
+                      toast.error('Gagal memasukkan template data');
+                    }
+                  }}
+                  className="bg-primary"
+                >
+                  Ya, Masukkan Data
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>
