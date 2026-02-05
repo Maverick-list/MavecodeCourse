@@ -25,7 +25,7 @@ import DashboardPage from './pages/DashboardPage';
 import CoursePlayerPage from './pages/CoursePlayerPage';
 import ClubPage from './pages/ClubPage';
 import BlockPage from './pages/BlockPage';
-import { AdminLayout, AdminLoginPage, AdminDashboard, AdminCoursesPage } from './pages/AdminPages';
+import { AdminLayout, AdminLoginPage, AdminDashboard, AdminCoursesPage, AdminArticlesPage, AdminLiveClassPage, AdminFAQPage, AdminSettingsPage } from './pages/AdminPages';
 import NotFoundPage from './pages/NotFoundPage';
 import ProfilePage from './pages/ProfilePage';
 
@@ -125,10 +125,10 @@ const AppContent = () => {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="courses" element={<AdminCoursesPage />} />
-          <Route path="articles" element={<AdminDashboard />} />
-          <Route path="live" element={<AdminDashboard />} />
-          <Route path="faq" element={<AdminDashboard />} />
-          <Route path="settings" element={<AdminDashboard />} />
+          <Route path="articles" element={<AdminArticlesPage />} />
+          <Route path="live" element={<AdminLiveClassPage />} />
+          <Route path="faq" element={<AdminFAQPage />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
 
         {/* Static Pages */}
