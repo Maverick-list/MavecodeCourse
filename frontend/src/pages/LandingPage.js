@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Spline from '@splinetool/react-spline';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+const Spline = lazy(() => import('@splinetool/react-spline'));
 import { motion, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -270,23 +270,33 @@ export const LandingPage = () => {
             className="relative mx-auto w-full max-w-2xl h-[400px] lg:h-[500px] overflow-hidden"
             style={{ background: 'transparent' }}
           >
-            <div
-              className="absolute inset-0"
-              style={{
-                height: 'calc(100% + 60px)',
-                marginBottom: '-60px',
-                background: 'transparent'
-              }}
-            >
-              <Spline
-                scene="https://prod.spline.design/gqqo80UMNmudDvXK/scene.splinecode"
+            <Suspense fallback={
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-primary/5 to-transparent">
+                <div className="relative">
+                  <div className="w-20 h-20 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <Cpu className="w-8 h-8 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                </div>
+                <p className="font-mono text-sm text-muted-foreground mt-4 animate-pulse">Loading AI Robot...</p>
+              </div>
+            }>
+              <div
+                className="absolute inset-0"
                 style={{
-                  width: '100%',
-                  height: '100%',
+                  height: 'calc(100% + 60px)',
+                  marginBottom: '-60px',
                   background: 'transparent'
                 }}
-              />
-            </div>
+              >
+                <Spline
+                  scene="https://prod.spline.design/gqqo80UMNmudDvXK/scene.splinecode"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    background: 'transparent'
+                  }}
+                />
+              </div>
+            </Suspense>
           </div>
         </div>
       </section>
