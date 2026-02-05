@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Spline from '@splinetool/react-spline';
 import { motion, useInView } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -243,7 +244,52 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* Mentor Section */}
+      {/* 3D AI Robot Section - Interactive with Mouse Tracking */}
+      <section className="py-16 relative overflow-visible">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-8"
+          >
+            <h3 className="font-mono text-primary text-sm tracking-[0.2em] uppercase mb-2">
+              Mavecode AI Assistant
+            </h3>
+            <h2 className="font-heading text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">
+              Meet Our AI Robot
+            </h2>
+            <p className="font-mono text-slate-600 dark:text-slate-400 mt-2">
+              Gerakkan kursor untuk berinteraksi dengan robot AI kami
+            </p>
+          </motion.div>
+
+          {/* Spline Container - Cropped to hide watermark */}
+          <div
+            className="relative mx-auto w-full max-w-2xl h-[400px] lg:h-[500px] overflow-hidden"
+            style={{ background: 'transparent' }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                height: 'calc(100% + 60px)',
+                marginBottom: '-60px',
+                background: 'transparent'
+              }}
+            >
+              <Spline
+                scene="https://prod.spline.design/gqqo80UMNmudDvXK/scene.splinecode"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  background: 'transparent'
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Mentor Section */}
       <section className="py-24 relative overflow-hidden" ref={mentorRef}>
         <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none" />
@@ -251,7 +297,7 @@ export const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center gap-16">
 
-            {/* Mentor Image with HUD Border */}
+            {/* Mentor Image with HUD Border - Clean, No Overlay */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}

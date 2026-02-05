@@ -29,7 +29,13 @@ try:
         print("WARNING: MONGO_URL is missing! App will start in Maintenance Mode.")
         db = None
     else:
-        client = AsyncIOMotorClient(mongo_url)
+        # Menambahkan timeout agar tidak menggantung selamanya jika DB mati
+        client = AsyncIOMotorClient(
+            mongo_url,
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
+            heartbeatFrequencyMS=10000
+        )
         db = client[db_name]
         print(f"SUCCESS: Connected to DB {db_name}")
 except Exception as e:
@@ -746,9 +752,7 @@ async def get_progress(course_id: str, user: dict = Depends(get_current_user)):
 import httpx
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent'
-
-
+GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent'
 SYSTEM_PROMPT = """Kamu adalah Mavecode AI, asisten cerdas untuk platform belajar coding Mavecode. 
 
 ## PRINSIP PERCAKAPAN KAMU:
@@ -810,9 +814,10 @@ async def chat_with_ai(data: ChatMessage):
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             payload = {
+                "system_instruction": {
+                    "parts": [{"text": SYSTEM_PROMPT}]
+                },
                 "contents": [
-                    {"role": "user", "parts": [{"text": SYSTEM_PROMPT}]},
-                    {"role": "model", "parts": [{"text": "Siap! Saya akan selalu bertanya untuk klarifikasi jika permintaan user umum, memberikan opsi pilihan, dan memberikan rekomendasi di setiap akhir jawaban. Mari bantu pengunjung Mavecode! 🤖"}]},
                     {"role": "user", "parts": [{"text": data.message}]}
                 ],
                 "generationConfig": {
@@ -829,6 +834,9 @@ async def chat_with_ai(data: ChatMessage):
             )
             
             result = response.json()
+            
+            if response.status_code != 200:
+                print(f"DEBUG GEMINI ERROR: Status {response.status_code}, Body: {result}")
             
             if response.status_code == 429:
                 return ChatResponse(
