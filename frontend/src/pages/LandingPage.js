@@ -130,6 +130,7 @@ export const LandingPage = () => {
         fetchFromAPI();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFirebaseConnected, firebaseLoading, firebaseHero, firebaseCourses, firebaseArticles, firebaseCategories, firebaseStats, firebaseMentors]);
 
   // Get lead mentor data

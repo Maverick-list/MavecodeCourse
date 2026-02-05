@@ -155,9 +155,11 @@ export const Chatbot = () => {
     }
 
     // Cleanup on unmount
+    const currentRecognition = recognitionRef.current;
+    const currentSynth = synthRef.current;
     return () => {
-      if (recognitionRef.current) recognitionRef.current.abort();
-      if (synthRef.current) synthRef.current.cancel();
+      if (currentRecognition) currentRecognition.abort();
+      if (currentSynth) currentSynth.cancel();
     };
   }, [sendMessage]); // Only re-run if sendMessage changes, but we try to keep it stable
 
@@ -271,8 +273,8 @@ export const Chatbot = () => {
                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm ${msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-tr-none shadow-lg'
-                        : 'bg-muted/50 border border-border/50 text-foreground rounded-tl-none'
+                      ? 'bg-primary text-primary-foreground rounded-tr-none shadow-lg'
+                      : 'bg-muted/50 border border-border/50 text-foreground rounded-tl-none'
                       }`}>
                       {msg.content}
                     </div>
