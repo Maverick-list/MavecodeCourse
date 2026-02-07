@@ -12,8 +12,9 @@ const AUTH_URL = 'https://api.mavecode.my.id/api';
 // Debugging
 console.log('API Config (FORCED):', { BACKEND_URL, AUTH_URL });
 
-export const API = BACKEND_URL;
-const AUTH_API = AUTH_URL;
+// VERSION 2.8 - FINAL HARDCODE
+export const API = 'https://api.mavecode.my.id/api';
+const AUTH_API = 'https://api.mavecode.my.id/api';
 
 // Auth Context
 const AuthContext = createContext(null);
