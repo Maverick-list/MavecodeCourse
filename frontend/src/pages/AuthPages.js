@@ -64,6 +64,7 @@ export const LoginPage = () => {
                 <span className="relative"><span style={{ color: '#1e3a5f' }}>MAVE</span><span style={{ color: '#f97316' }}>CODE</span></span>
               </span>
             </Link>
+            <div className="text-xs text-green-500 font-mono mb-2">Build: v2.6-FORCED</div>
             <h1 className="font-heading font-bold text-2xl mb-2">Selamat Datang!</h1>
             <p className="text-muted-foreground">Masuk untuk melanjutkan belajar</p>
           </div>
