@@ -3,19 +3,14 @@ import axios from 'axios';
 import { toast } from 'sonner';
 
 const normalizeUrl = (url) => {
-  if (!url) return 'https://api.mavecode.my.id/api'; // Default fallback
-  let clean = url.replace(/\/+$/, '');
-  if (!clean.endsWith('/api')) {
-    clean += '/api';
-  }
-  return clean;
+  return 'https://api.mavecode.my.id/api'; // FORCE PRODUCTION URL
 };
 
-const BACKEND_URL = normalizeUrl(process.env.REACT_APP_BACKEND_URL);
-const AUTH_URL = normalizeUrl(process.env.REACT_APP_AUTH_URL || process.env.REACT_APP_BACKEND_URL);
+const BACKEND_URL = 'https://api.mavecode.my.id/api';
+const AUTH_URL = 'https://api.mavecode.my.id/api';
 
 // Debugging
-console.log('API Config:', { BACKEND_URL, AUTH_URL });
+console.log('API Config (FORCED):', { BACKEND_URL, AUTH_URL });
 
 export const API = BACKEND_URL;
 const AUTH_API = AUTH_URL;
