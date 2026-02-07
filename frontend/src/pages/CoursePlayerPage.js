@@ -10,12 +10,11 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
-import { useAuth } from '../context/AppContext';
+import { useAuth, API } from '../context/AppContext';
 import { toast } from 'sonner';
 import QuizComponent from '../components/QuizComponent';
 import ContentPlaceholder from '../components/ContentPlaceholder';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const CoursePlayerPage = () => {
     const { id } = useParams();

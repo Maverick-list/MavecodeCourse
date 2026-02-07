@@ -7,8 +7,8 @@ import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
 import ArticleCard from '../components/ArticleCard';
 import { useFirebaseData } from '../context/FirebaseContext';
+import { API } from '../context/AppContext';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const ArticlesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();

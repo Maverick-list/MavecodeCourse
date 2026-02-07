@@ -161,7 +161,7 @@ const StaticPage = ({ title }) => (
 
 // Main App Component
 function App() {
-  const CLIENT_ID = "762388730678-5jvefesa8u27mqo9nhnmmq3ujq5h88re.apps.googleusercontent.com";
+  const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   return (
     <GoogleOAuthProvider clientId={CLIENT_ID}>

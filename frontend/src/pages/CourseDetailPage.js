@@ -9,11 +9,10 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
-import { useAuth } from '../context/AppContext';
+import { useAuth, API } from '../context/AppContext';
 
 import { PaymentModal } from '../components/PaymentModal';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const MENTOR_IMAGE = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/0hxoi5k4_53B2736F-666E-4CE5-8AB8-72D901786EB2.JPG";
 
 export const CourseDetailPage = () => {

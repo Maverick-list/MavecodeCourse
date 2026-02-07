@@ -13,6 +13,7 @@ import { Badge } from '../components/ui/badge';
 import CourseCard from '../components/CourseCard';
 import ArticleCard from '../components/ArticleCard';
 import { useFirebaseData } from '../context/FirebaseContext';
+import { API } from '../context/AppContext';
 import webImg from '../assets/categories/web.png';
 import mobileImg from '../assets/categories/mobile.png';
 import backendImg from '../assets/categories/backend.png';
@@ -20,7 +21,6 @@ import frontendImg from '../assets/categories/frontend.png';
 import dataImg from '../assets/categories/data.png';
 import devopsImg from '../assets/categories/devops.png';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const MENTOR_IMAGE = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/0hxoi5k4_53B2736F-666E-4CE5-8AB8-72D901786EB2.JPG";
 const HERO_BG = "https://images.unsplash.com/photo-1649451844813-3130d6f42f8a?crop=entropy&cs=srgb&fm=jpg&q=85";
 
@@ -404,7 +404,8 @@ export const LandingPage = () => {
                 color: 'from-blue-600 to-indigo-600',
                 icon: Code,
                 courses: 12,
-                students: '4.5k+'
+                students: '4.5k+',
+                url: 'https://roadmap.sh/frontend'
               },
               {
                 title: 'Backend Scalability Expert',
@@ -412,7 +413,8 @@ export const LandingPage = () => {
                 color: 'from-emerald-600 to-teal-700',
                 icon: Server,
                 courses: 15,
-                students: '2.8k+'
+                students: '2.8k+',
+                url: 'https://roadmap.sh/backend'
               },
               {
                 title: 'Data Science & AI Intelligence',
@@ -420,16 +422,20 @@ export const LandingPage = () => {
                 color: 'from-purple-600 to-pink-600',
                 icon: BarChart3,
                 courses: 10,
-                students: '3.1k+'
+                students: '3.1k+',
+                url: 'https://roadmap.sh/ai-data-scientist'
               }
             ].map((path, i) => (
-              <motion.div
+              <motion.a
                 key={i}
+                href={path.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -10 }}
-                className="group relative h-[380px] rounded-[2.5rem] overflow-hidden p-8 flex flex-col justify-end text-white shadow-xl hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500"
+                className="group relative h-[380px] rounded-[2.5rem] overflow-hidden p-8 flex flex-col justify-end text-white shadow-xl hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 cursor-pointer block"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${path.color} z-0 group-hover:scale-110 transition-transform duration-700`} />
                 <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 z-0" />
@@ -452,9 +458,45 @@ export const LandingPage = () => {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </motion.a>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Project Exhibition Section */}
+      <section className="py-24 relative z-10 overflow-hidden bg-black/40 border-y border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="relative p-8 md:p-12 rounded-[2rem] overflow-hidden border border-primary/20 bg-background/50 backdrop-blur-md"
+          >
+            <div className="absolute inset-0 bg-primary/5 animate-pulse" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -z-10" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/20 rounded-full blur-[80px] -z-10" />
+
+            <div className="relative z-10">
+              <h2 className="font-heading text-3xl md:text-5xl text-white mb-6 uppercase tracking-wider glow-primary">
+                Pameran Karya Developer
+              </h2>
+              <p className="font-mono text-lg text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+                Saksikan karya-karya terbaik dari komunitas Mavecode. Temukan inspirasi, pelajari studi kasus nyata, dan dukung inovasi sesama developer.
+              </p>
+              <Button
+                size="lg"
+                onClick={() => alert("Website belum tersedia. Nantikan segera!")}
+                className="bg-accent hover:bg-accent/90 text-white font-heading font-bold uppercase tracking-widest rounded-none px-12 py-8 text-lg shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_40px_rgba(34,197,94,0.6)] transition-all duration-300 transform hover:-translate-y-1 group"
+              >
+                <span className="flex items-center gap-3">
+                  <Sparkles className="w-6 h-6 group-hover:animate-spin-slow" />
+                  Kunjungi Galeri Pameran
+                  <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </section>
 

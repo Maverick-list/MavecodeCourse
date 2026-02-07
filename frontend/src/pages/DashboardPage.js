@@ -9,10 +9,9 @@ import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { Progress } from '../components/ui/progress';
 import { Badge } from '../components/ui/badge';
-import { useAuth } from '../context/AppContext';
+import { useAuth, API } from '../context/AppContext';
 import { useFocusMode } from '../context/FocusModeContext';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const DashboardPage = () => {
   const { user, token } = useAuth();

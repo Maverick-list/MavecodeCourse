@@ -140,7 +140,7 @@ export const LoginPage = () => {
           {/* Social Login */}
           <div className="flex justify-center mt-4">
             <GoogleLogin
-              clientId="762388730678-5jvefesa8u27mqo9nhnmmq3ujq5h88re.apps.googleusercontent.com"
+              clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}
               onSuccess={onGoogleSuccess}
               onError={() => toast.error('Login Google Gagal')}
               useOneTap

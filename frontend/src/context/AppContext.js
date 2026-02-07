@@ -2,10 +2,23 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const AUTH_URL = process.env.REACT_APP_AUTH_URL;
-export const API = `${BACKEND_URL}/api`;
-const AUTH_API = `${AUTH_URL}/api`;
+const normalizeUrl = (url) => {
+  if (!url) return 'https://api.mavecode.my.id/api'; // Default fallback
+  let clean = url.replace(/\/+$/, '');
+  if (!clean.endsWith('/api')) {
+    clean += '/api';
+  }
+  return clean;
+};
+
+const BACKEND_URL = normalizeUrl(process.env.REACT_APP_BACKEND_URL);
+const AUTH_URL = normalizeUrl(process.env.REACT_APP_AUTH_URL || process.env.REACT_APP_BACKEND_URL);
+
+// Debugging
+console.log('API Config:', { BACKEND_URL, AUTH_URL });
+
+export const API = BACKEND_URL;
+const AUTH_API = AUTH_URL;
 
 // Auth Context
 const AuthContext = createContext(null);

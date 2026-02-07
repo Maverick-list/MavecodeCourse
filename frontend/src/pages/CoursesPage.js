@@ -15,8 +15,8 @@ import {
 } from '../components/ui/select';
 import CourseCard from '../components/CourseCard';
 import { useFirebaseData } from '../context/FirebaseContext';
+import { API } from '../context/AppContext';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const CATEGORY_ICONS = {
   web: Globe,
@@ -180,8 +180,8 @@ export const CoursesPage = () => {
                   variant={isActive ? "default" : "outline"}
                   onClick={() => updateFilter('category', cat.id)}
                   className={`rounded-full h-12 px-6 gap-2 transition-all ${isActive
-                      ? 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200'
-                      : 'border-slate-200 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 bg-white'
+                    ? 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-200'
+                    : 'border-slate-200 hover:border-indigo-500 hover:text-indigo-600 text-slate-600 bg-white'
                     }`}
                 >
                   <Icon className="w-5 h-5" />

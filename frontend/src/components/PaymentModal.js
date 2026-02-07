@@ -5,9 +5,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { useAuth } from '../context/AppContext';
+import { useAuth, API } from '../context/AppContext';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const formatPrice = (price) => {
     return new Intl.NumberFormat('id-ID', {
@@ -136,8 +135,8 @@ export const PaymentModal = ({ isOpen, onClose, course, onSuccess }) => {
                                                         key={option.id}
                                                         onClick={() => setSelectedMethod(option)}
                                                         className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${selectedMethod?.id === option.id
-                                                                ? 'bg-primary/20 border-primary ring-1 ring-primary'
-                                                                : 'bg-white/5 border-transparent hover:bg-white/10'
+                                                            ? 'bg-primary/20 border-primary ring-1 ring-primary'
+                                                            : 'bg-white/5 border-transparent hover:bg-white/10'
                                                             }`}
                                                     >
                                                         {/* Placeholder Icon */}

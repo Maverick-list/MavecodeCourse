@@ -8,11 +8,10 @@ import {
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { useAuth } from '../context/AppContext';
+import { useAuth, API } from '../context/AppContext';
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const API = process.env.REACT_APP_BACKEND_URL;
 
 const ProfilePage = () => {
     const { user, setUser } = useAuth();

@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { API } from '../context/AppContext';
 import axios from 'axios';
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/59psddfu_IMG_7510.JPG";
@@ -78,9 +79,7 @@ export const Chatbot = () => {
     setLoading(true);
 
     try {
-      const envUrl = process.env.REACT_APP_BACKEND_URL;
-      const backendUrl = (envUrl || 'http://127.0.0.1:5001').replace(/\/$/, '');
-      const fullUrl = `${backendUrl}/api/chat`;
+      const fullUrl = `${API}/chat`;
 
       const res = await axios.post(fullUrl, {
         message: userMessage,

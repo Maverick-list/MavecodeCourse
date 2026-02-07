@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import axios from 'axios';
+import { API } from '../context/AppContext';
 import {
   Accordion,
   AccordionContent,
@@ -8,7 +9,6 @@ import {
   AccordionTrigger,
 } from '../components/ui/accordion';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 export const FAQPage = () => {
   const [faqs, setFaqs] = useState([]);
@@ -74,7 +74,7 @@ export const FAQPage = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <AccordionItem 
+                  <AccordionItem
                     value={faq.id}
                     className="bg-card border border-border rounded-xl px-6 data-[state=open]:border-primary/50"
                     data-testid={`faq-${faq.id}`}
@@ -106,14 +106,14 @@ export const FAQPage = () => {
             Tim kami siap membantu menjawab pertanyaanmu
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a 
+            <a
               href="mailto:firzailmidja@gmail.com"
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors"
               data-testid="faq-email"
             >
               Kirim Email
             </a>
-            <a 
+            <a
               href="https://wa.me/6285191769521"
               target="_blank"
               rel="noopener noreferrer"
