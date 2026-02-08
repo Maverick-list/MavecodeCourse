@@ -33,6 +33,8 @@ const ProfilePage = () => {
         skills: '',
         photoUrl: user?.picture || 'https://api.dicebear.com/7.x/adventurer/svg?seed=User',
     });
+    const [stats, setStats] = useState({ courses: 0, certificates: 0, xp: 0 });
+    const [certificates, setCertificates] = useState([]);
 
     useEffect(() => {
         // Load saved profile from localStorage
@@ -49,6 +51,25 @@ const ProfilePage = () => {
                 photoUrl: user.picture || prev.photoUrl
             }));
         }
+
+        const fetchUserStats = async () => {
+            try {
+                const [coursesRes, certsRes] = await Promise.all([
+                    axios.get(`${API}/dashboard/courses`, { headers: { Authorization: `Bearer ${user?.token || localStorage.getItem('mavecode_token')}` } }),
+                    axios.get(`${API}/certificates`, { headers: { Authorization: `Bearer ${user?.token || localStorage.getItem('mavecode_token')}` } })
+                ]);
+                setStats({
+                    courses: coursesRes.data.length,
+                    certificates: certsRes.data.length,
+                    xp: coursesRes.data.reduce((acc, c) => acc + (c.completed_videos * 10), 0)
+                });
+                setCertificates(certsRes.data);
+            } catch (err) {
+                console.error('Error fetching user stats:', err);
+            }
+        };
+
+        if (user) fetchUserStats();
     }, [user]);
 
     const handleChange = (e) => {
@@ -156,17 +177,17 @@ const ProfilePage = () => {
                             <div className="grid grid-cols-3 gap-2 mt-6 pt-6 border-t border-border">
                                 <div className="text-center">
                                     <BookOpen className="h-5 w-5 text-primary mx-auto mb-1" />
-                                    <p className="text-lg font-bold">0</p>
+                                    <p className="text-lg font-bold">{stats.courses}</p>
                                     <p className="text-[10px] text-muted-foreground">Kursus</p>
                                 </div>
                                 <div className="text-center">
                                     <Award className="h-5 w-5 text-accent mx-auto mb-1" />
-                                    <p className="text-lg font-bold">0</p>
+                                    <p className="text-lg font-bold">{stats.certificates}</p>
                                     <p className="text-[10px] text-muted-foreground">Sertifikat</p>
                                 </div>
                                 <div className="text-center">
                                     <Sparkles className="h-5 w-5 text-yellow-500 mx-auto mb-1" />
-                                    <p className="text-lg font-bold">0</p>
+                                    <p className="text-lg font-bold">{stats.xp}</p>
                                     <p className="text-[10px] text-muted-foreground">XP</p>
                                 </div>
                             </div>
@@ -272,6 +293,50 @@ const ProfilePage = () => {
                                     <Input name="website" value={profile.website} onChange={handleChange} placeholder="https://yourwebsite.com" />
                                 </div>
                             </div>
+                        </motion.div>
+
+                        {/* Certificates Section */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.35 }}
+                            className="bg-card border border-border rounded-2xl p-6"
+                        >
+                            <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
+                                <Award className="h-5 w-5 text-accent" />
+                                Sertifikat Saya
+                            </h2>
+                            {certificates.length > 0 ? (
+                                <div className="grid grid-cols-1 gap-3">
+                                    {certificates.map((cert) => (
+                                        <div key={cert.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center">
+                                                    <Award className="w-5 h-5 text-accent" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold text-sm">{cert.course_title}</h4>
+                                                    <p className="text-[10px] text-muted-foreground">Diterbitkan: {new Date(cert.issued_at).toLocaleDateString()}</p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="h-8 text-xs bg-accent/10 hover:bg-accent hover:text-white"
+                                                onClick={() => navigate(`/dashboard/certificates/${cert.course_id}`)}
+                                            >
+                                                Lihat
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 bg-muted/20 border border-dashed border-border rounded-xl">
+                                    <Award className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+                                    <p className="text-sm text-muted-foreground">Belum ada sertifikat</p>
+                                    <p className="text-[10px] text-muted-foreground/60">Selesaikan kursus untuk mendapatkan sertifikat!</p>
+                                </div>
+                            )}
                         </motion.div>
 
                         {/* Save Button */}

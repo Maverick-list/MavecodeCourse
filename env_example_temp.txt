@@ -1,6 +1,0 @@
-# Backend URL (already configured)
-REACT_APP_BACKEND_URL=http://localhost:8001
-
-# Admin Access Code (default: 2024)
-# Change this to your preferred PIN/code
-REACT_APP_ADMIN_CODE=2024

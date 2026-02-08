@@ -25,9 +25,10 @@ import DashboardPage from './pages/DashboardPage';
 import CoursePlayerPage from './pages/CoursePlayerPage';
 import ClubPage from './pages/ClubPage';
 import BlockPage from './pages/BlockPage';
-import { AdminLayout, AdminLoginPage, AdminDashboard, AdminCoursesPage, AdminArticlesPage, AdminLiveClassPage, AdminFAQPage, AdminSettingsPage } from './pages/AdminPages';
+import { AdminLayout, AdminLoginPage, AdminDashboard, AdminCoursesPage, AdminArticlesPage, AdminLiveClassPage, AdminFAQPage, AdminCertificatesPage, AdminSettingsPage } from './pages/AdminPages';
 import NotFoundPage from './pages/NotFoundPage';
 import ProfilePage from './pages/ProfilePage';
+import CertificatePage from './pages/CertificatePage';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -119,6 +120,11 @@ const AppContent = () => {
             <MainLayout><ProfilePage /></MainLayout>
           </ProtectedRoute>
         } />
+        <Route path="/dashboard/certificates/:courseId" element={
+          <ProtectedRoute>
+            <CertificatePage />
+          </ProtectedRoute>
+        } />
 
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -128,6 +134,7 @@ const AppContent = () => {
           <Route path="articles" element={<AdminArticlesPage />} />
           <Route path="live" element={<AdminLiveClassPage />} />
           <Route path="faq" element={<AdminFAQPage />} />
+          <Route path="certificates" element={<AdminCertificatesPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
 

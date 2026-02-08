@@ -129,10 +129,17 @@ const CoursePlayerPage = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 rounded-full">
-                        < Award size={14} className="fill-current" />
-                        <span className="text-xs font-bold uppercase tracking-tight">Kumpulkan Sertifikat</span>
-                    </div>
+                    {overallProgress === 100 ? (
+                        <Link to={`/dashboard/certificates/${id}`} className="flex items-center gap-2 px-3 py-1.5 bg-amber-500 text-white border border-amber-600 rounded-full hover:bg-amber-600 transition-colors animate-pulse">
+                            <Award size={14} className="fill-current" />
+                            <span className="text-xs font-bold uppercase tracking-tight">Klaim Sertifikat! 🎓</span>
+                        </Link>
+                    ) : (
+                        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 rounded-full opacity-60">
+                            <Award size={14} className="fill-current" />
+                            <span className="text-xs font-bold uppercase tracking-tight">Terkuak di 100%</span>
+                        </div>
+                    )}
                     <div className="w-px h-6 bg-white/10 mx-2" />
                     <Button variant="ghost" className="rounded-full gap-2 text-white hover:bg-white/10">
                         <MessageSquare size={18} />

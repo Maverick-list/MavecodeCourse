@@ -24,8 +24,22 @@ export const DashboardPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const coursesRes = await axios.get(`${API}/courses`);
-        setCourses(coursesRes.data.slice(0, 4));
+        // Fetch dashboard specific courses (with progress)
+        const coursesRes = await axios.get(`${API}/dashboard/courses`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setCourses(coursesRes.data);
+
+        // Fetch user certificates
+        const certsRes = await axios.get(`${API}/certificates`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        setStats({
+          courses_enrolled: coursesRes.data.length,
+          hours_learned: coursesRes.data.reduce((acc, c) => acc + (c.completed_videos * 0.5), 0).toFixed(1), // Estimate 30m per video
+          certificates: certsRes.data.length
+        });
 
         // Fetch saved articles
         const savedSlugs = JSON.parse(localStorage.getItem('mavecode_saved_articles') || '[]');
@@ -40,7 +54,7 @@ export const DashboardPage = () => {
         setLoading(false);
       }
     };
-    fetchData();
+    if (token) fetchData();
   }, [token]);
 
   const removeSavedArticle = (slug) => {
@@ -172,18 +186,28 @@ export const DashboardPage = () => {
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <Badge variant="secondary" className="mb-2 text-xs w-fit bg-primary/10 text-primary border-primary/20">{course.category}</Badge>
                     <h3 className="font-bold text-lg mb-2 truncate group-hover:text-primary transition-colors">{course.title}</h3>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <span>{course.duration_hours}j</span>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4 text-primary" />
+                          <span>{course.duration_hours}j</span>
+                        </div>
+                        <div className="w-1 h-1 bg-muted-foreground/30 rounded-full" />
+                        <span>{course.progress}% Selesai</span>
                       </div>
-                      <div className="w-1 h-1 bg-muted-foreground/30 rounded-full" />
-                      <span>{Math.floor(Math.random() * 60) + 20}% Selesai</span>
+
+                      {course.progress === 100 && (
+                        <Button asChild size="sm" className="h-7 bg-amber-500 hover:bg-amber-600 text-[10px] px-2 gap-1 animate-bounce">
+                          <Link to={`/dashboard/certificates/${course.id}`}>
+                            <Award className="w-3 h-3" /> Klaim Sertifikat
+                          </Link>
+                        </Button>
+                      )}
                     </div>
                     <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
-                        animate={{ width: `${Math.floor(Math.random() * 60) + 20}%` }}
+                        animate={{ width: `${course.progress}%` }}
                         transition={{ duration: 1, delay: 0.5 }}
                         className="h-full bg-gradient-to-r from-primary to-blue-600 rounded-full"
                       />

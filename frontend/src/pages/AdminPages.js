@@ -50,6 +50,7 @@ const sidebarLinks = [
   { name: 'Artikel', href: '/admin/articles', icon: FileText },
   { name: 'Live Class', href: '/admin/live', icon: Video },
   { name: 'FAQ', href: '/admin/faq', icon: Users },
+  { name: 'Sertifikat', href: '/admin/certificates', icon: Award },
   { name: 'Pengaturan', href: '/admin/settings', icon: Settings },
 ];
 
@@ -285,7 +286,7 @@ export const AdminDashboard = () => {
           { label: 'Total Kursus', value: stats.courses, color: 'bg-primary/20 text-primary' },
           { label: 'Total Artikel', value: stats.articles, color: 'bg-green-500/20 text-green-500' },
           { label: 'Total Siswa', value: stats.students, color: 'bg-yellow-500/20 text-yellow-500' },
-          { label: 'Mentor', value: stats.mentors, color: 'bg-purple-500/20 text-purple-500' },
+          { label: 'Sertifikat', value: stats.certificates, color: 'bg-accent/20 text-accent' },
         ].map((stat) => (
           <div key={stat.label} className="bg-card border border-border rounded-2xl p-6">
             <p className="text-muted-foreground text-sm mb-2">{stat.label}</p>
@@ -314,6 +315,12 @@ export const AdminDashboard = () => {
               <Link to="/admin/live">
                 <Video className="w-6 h-6 mb-2" />
                 <span>Live Class</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-auto py-4 flex-col">
+              <Link to="/admin/certificates">
+                <Award className="w-6 h-6 mb-2" />
+                <span>Sertifikat</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto py-4 flex-col">
@@ -1240,6 +1247,113 @@ export const AdminSettingsPage = () => {
           {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
         </Button>
       </form>
+    </div>
+  );
+};
+
+// Admin Certificates Page
+export const AdminCertificatesPage = () => {
+  const { token } = useAuth();
+  const [certificates, setCertificates] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCertificates = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/certificates`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCertificates(res.data);
+    } catch (err) { }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchCertificates(); }, []);
+
+  const handleSign = async (certId) => {
+    try {
+      await axios.post(`${API}/admin/certificates/${certId}/sign`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Sertifikat berhasil ditandatangani! ✍️');
+      fetchCertificates();
+    } catch (err) {
+      toast.error('Gagal menandatangani sertifikat');
+    }
+  };
+
+  return (
+    <div className="p-6 lg:p-8">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="font-heading font-bold text-3xl">Kelola Sertifikat</h1>
+        <Badge variant="outline" className="px-4 py-1">Total: {certificates.length}</Badge>
+      </div>
+
+      {loading ? (
+        <div className="space-y-4">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-muted rounded-xl animate-pulse" />)}</div>
+      ) : certificates.length > 0 ? (
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-muted/50 border-b border-border">
+                <th className="px-6 py-4 text-sm font-semibold uppercase tracking-wider">Nama Siswa</th>
+                <th className="px-6 py-4 text-sm font-semibold uppercase tracking-wider">Kursus</th>
+                <th className="px-6 py-4 text-sm font-semibold uppercase tracking-wider">Tanggal</th>
+                <th className="px-6 py-4 text-sm font-semibold uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-sm font-semibold uppercase tracking-wider">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {certificates.map((cert) => (
+                <tr key={cert.id} className="hover:bg-muted/20 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="font-medium text-foreground">{cert.user_name}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{cert.id}</div>
+                  </td>
+                  <td className="px-6 py-4">{cert.course_title}</td>
+                  <td className="px-6 py-4 text-sm">{new Date(cert.issued_at).toLocaleDateString('id-ID')}</td>
+                  <td className="px-6 py-4">
+                    {cert.is_signed ? (
+                      <Badge className="bg-green-500 hover:bg-green-600">Terdaftar</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-amber-500 border-amber-500/50">Menunggu TTD</Badge>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2">
+                      {!cert.is_signed && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleSign(cert.id)}
+                          className="text-primary hover:text-primary hover:bg-primary/10 h-8 px-2"
+                        >
+                          <Award className="w-4 h-4 mr-1" /> TTD
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        asChild
+                        className="h-8 px-2"
+                      >
+                        <Link to={`/dashboard/certificates/${cert.course_id}`} target="_blank">
+                          <Eye className="w-4 h-4 mr-1" /> Preview
+                        </Link>
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="text-center py-20 bg-muted/30 rounded-3xl border-2 border-dashed border-border">
+          <Award className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-1">Belum ada klaim sertifikat</h2>
+          <p className="text-muted-foreground max-w-sm mx-auto text-sm">Siswa yang menyelesaikan kursus 100% akan muncul di sini untuk ditandatangani.</p>
+        </div>
+      )}
     </div>
   );
 };

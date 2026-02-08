@@ -32,6 +32,7 @@ const footerLinks = {
     { name: 'Block IDE', href: '/block', badge: 'New' },
     { name: 'Focus Mode', href: '/dashboard' },
     { name: 'AI Assistant', href: '/dashboard' },
+    { name: 'Profil Saya', href: '/profile' },
   ],
   support: [
     { name: 'FAQ', href: '/faq' },

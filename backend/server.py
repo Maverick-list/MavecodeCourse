@@ -247,6 +247,16 @@ class UserProgress(BaseModel):
     completed: bool = False
     progress_percent: int = 0
 
+class CertificateResponse(BaseModel):
+    id: str
+    user_id: str
+    user_name: str
+    course_id: str
+    course_title: str
+    issued_at: str
+    is_signed: bool = False
+    signature_url: Optional[str] = None
+
 # ============ Helper Functions ============
 
 def hash_password(password: str) -> str:
@@ -883,10 +893,12 @@ async def get_stats():
     courses_count = await db.courses.count_documents({})
     users_count = await db.users.count_documents({})
     articles_count = await db.articles.count_documents({})
+    certs_count = await db.certificates.count_documents({})
     return {
         "courses": courses_count + 50,
         "students": users_count + 1000,
         "articles": articles_count + 10,
+        "certificates": certs_count + 15,
         "mentors": 5
     }
 
@@ -1046,6 +1058,101 @@ async def seed_data():
     await db.live_classes.insert_many(live_classes)
     
     return {"message": "Seed data created successfully"}
+
+# ============ Certificate Routes ============
+
+@api_router.get("/certificates/{course_id}", response_model=CertificateResponse)
+async def get_certificate(course_id: str, user: dict = Depends(get_current_user)):
+    # 1. Check if certificate already exists
+    cert = await db.certificates.find_one({'user_id': user['id'], 'course_id': course_id}, {'_id': 0})
+    if cert:
+        return CertificateResponse(**cert)
+    
+    # 2. Check course exists
+    course = await db.courses.find_one({'id': course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # 3. Check progress (Verify all videos completed)
+    total_videos = await db.videos.count_documents({'course_id': course_id})
+    if total_videos == 0:
+        raise HTTPException(status_code=400, detail="Course curriculum not set up")
+        
+    completed_videos = await db.progress.count_documents({
+        'user_id': user['id'], 
+        'course_id': course_id,
+        'completed': True
+    })
+    
+    # logic completion check: if completed >= total
+    if completed_videos < total_videos:
+        raise HTTPException(status_code=403, detail="Selesaikan semua materi sebelum mengklaim sertifikat")
+    
+    # 4. Create Certificate
+    cert_id = f"CERT-{uuid.uuid4().hex[:12].upper()}"
+    now = datetime.now(timezone.utc).isoformat()
+    
+    cert_doc = {
+        'id': cert_id,
+        'user_id': user['id'],
+        'user_name': user['name'],
+        'course_id': course_id,
+        'course_title': course['title'],
+        'issued_at': now,
+        'is_signed': False,
+        'signature_url': None
+    }
+    await db.certificates.insert_one(cert_doc)
+    return CertificateResponse(**cert_doc)
+
+@api_router.get("/admin/certificates", response_model=List[CertificateResponse])
+async def get_all_certificates(admin: dict = Depends(get_admin_user)):
+    certs = await db.certificates.find({}, {'_id': 0}).sort('issued_at', -1).to_list(100)
+    return certs
+
+@api_router.post("/admin/certificates/{cert_id}/sign")
+async def sign_certificate(cert_id: str, signature_url: Optional[str] = None, admin: dict = Depends(get_admin_user)):
+    # Default signature if none provided
+    if not signature_url:
+        signature_url = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/signature_demo.png"
+        
+    result = await db.certificates.update_one(
+        {'id': cert_id},
+        {'$set': {'is_signed': True, 'signature_url': signature_url}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    return {"message": "Sertifikat berhasil ditandatangani"}
+
+@api_router.get("/dashboard/courses")
+async def get_dashboard_courses(user: dict = Depends(get_current_user)):
+    # Fetch courses user is enrolled in.
+    # For now, let's assume they have access to all courses if premium, or just show all for demo
+    courses = await db.courses.find({}, {'_id': 0}).to_list(100)
+    
+    # Enrich with progress
+    for course in courses:
+        total_videos = await db.videos.count_documents({'course_id': course['id']})
+        completed_videos = await db.progress.count_documents({
+            'user_id': user['id'],
+            'course_id': course['id'],
+            'completed': True
+        })
+        
+        if total_videos > 0:
+            course['progress'] = int((completed_videos / total_videos) * 100)
+        else:
+            course['progress'] = 0
+            
+        course['total_videos'] = total_videos
+        course['completed_videos'] = completed_videos
+        
+    return courses
+
+@api_router.get("/certificates", response_model=List[CertificateResponse])
+async def get_user_certificates(user: dict = Depends(get_current_user)):
+    certs = await db.certificates.find({'user_id': user['id']}, {'_id': 0}).sort('issued_at', -1).to_list(100)
+    return certs
 
 # ============ Root ============
 
