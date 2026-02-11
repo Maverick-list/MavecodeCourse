@@ -78,7 +78,14 @@ async def seed_database():
         except Exception as e:
             print(f"⚠️ DoH Resolution failed ({e}), trying default...")
 
-    client = AsyncIOMotorClient(final_url, tlsCAFile=certifi.where())
+    # Determine if we should use TLS
+    use_tls = "ssl=true" in final_url.lower() or "tls=true" in final_url.lower() or final_url.startswith("mongodb+srv://")
+    
+    client_kwargs = {}
+    if use_tls:
+        client_kwargs["tlsCAFile"] = certifi.where()
+    
+    client = AsyncIOMotorClient(final_url, **client_kwargs)
     db = client[DB_NAME]
     
     now = datetime.now(timezone.utc).isoformat()
