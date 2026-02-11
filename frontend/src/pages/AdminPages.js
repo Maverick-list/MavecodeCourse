@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, FileText, Video, Users,
-  Settings, LogOut, Plus, Pencil, Trash2, Eye, Menu, X, Sun, Moon
+  Settings, LogOut, Plus, Pencil, Trash2, Eye, Menu, X, Sun, Moon, Award
 } from 'lucide-react';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
@@ -1257,7 +1257,7 @@ export const AdminCertificatesPage = () => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchCertificates = async () => {
+  const fetchCertificates = React.useCallback(async () => {
     try {
       const res = await axios.get(`${API}/admin/certificates`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -1265,9 +1265,9 @@ export const AdminCertificatesPage = () => {
       setCertificates(res.data);
     } catch (err) { }
     setLoading(false);
-  };
+  }, [token]);
 
-  useEffect(() => { fetchCertificates(); }, []);
+  useEffect(() => { fetchCertificates(); }, [fetchCertificates]);
 
   const handleSign = async (certId) => {
     try {

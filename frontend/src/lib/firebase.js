@@ -1,6 +1,6 @@
 // Firebase Configuration - Shared between MavecodeCourse and Website_Editor
 // Replace these values with your actual Firebase project credentials
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getStorage } from 'firebase/storage';
@@ -14,13 +14,29 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID || "YOUR_APP_ID"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase safely
+let app;
+try {
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+    console.log("Firebase initialized successfully");
+  } else {
+    app = getApp();
+  }
+} catch (error) {
+  console.error("Firebase initialization failed:", error);
+  // Create a mock app-like object to prevent crashes elsewhere
+  app = {
+    options: firebaseConfig,
+    name: '[DEFAULT]-MOCK'
+  };
+}
 
-// Initialize services
-export const db = getFirestore(app);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
+// Initialize services with error handling
+export const db = app.name !== '[DEFAULT]-MOCK' ? getFirestore(app) : null;
+export const auth = app.name !== '[DEFAULT]-MOCK' ? getAuth(app) : null;
+export const storage = app.name !== '[DEFAULT]-MOCK' ? getStorage(app) : null;
 export const googleProvider = new GoogleAuthProvider();
 
 export default app;
+

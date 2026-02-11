@@ -166,23 +166,68 @@ const StaticPage = ({ title }) => (
 );
 
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+          <div className="max-w-md w-full bg-card border border-border rounded-3xl p-8 text-center shadow-2xl">
+            <h1 className="text-2xl font-bold mb-4 text-red-500">Ups, terjadi kesalahan sistem</h1>
+            <p className="text-muted-foreground mb-6">
+              Aplikasi mengalami masalah teknis. Kami telah mencatat error ini dan akan segera memperbaikinya.
+            </p>
+            <div className="bg-muted p-4 rounded-xl mb-6 text-left overflow-auto max-h-40">
+              <code className="text-xs text-red-500">{this.state.error?.toString()}</code>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-primary text-primary-foreground rounded-full py-3 font-bold hover:bg-primary/90 transition-all font-heading"
+            >
+              REFRESH HALAMAN
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Main App Component
 function App() {
   const CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID;
 
   return (
-    <GoogleOAuthProvider clientId={CLIENT_ID}>
-      <ThemeProvider>
-        <AuthProvider>
-          <FirebaseProvider>
-            <FocusModeProvider>
-              <AppContent />
-            </FocusModeProvider>
-          </FirebaseProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </GoogleOAuthProvider>
+    <ErrorBoundary>
+      <GoogleOAuthProvider clientId={CLIENT_ID}>
+        <ThemeProvider>
+          <AuthProvider>
+            <FirebaseProvider>
+              <FocusModeProvider>
+                <AppContent />
+              </FocusModeProvider>
+            </FirebaseProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </GoogleOAuthProvider>
+    </ErrorBoundary>
   );
 }
 
 export default App;
+

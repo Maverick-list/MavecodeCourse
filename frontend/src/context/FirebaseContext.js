@@ -71,6 +71,12 @@ export const FirebaseProvider = ({ children }) => {
         let mounted = true;
 
         const setupListeners = async () => {
+            if (!db) {
+                console.warn('Firebase DB is not initialized. Using default data.');
+                setLoading(false);
+                return;
+            }
+
             try {
                 // Hero Content listener (single document)
                 const heroRef = doc(db, COLLECTIONS.HERO, 'main');
@@ -87,8 +93,9 @@ export const FirebaseProvider = ({ children }) => {
                 unsubscribers.push(unsubHero);
 
                 // Courses listener - only published
+                const coursesCollection = collection(db, COLLECTIONS.COURSES);
                 const coursesQuery = query(
-                    collection(db, COLLECTIONS.COURSES),
+                    coursesCollection,
                     where('status', '==', 'published'),
                     orderBy('createdAt', 'desc')
                 );
@@ -106,19 +113,24 @@ export const FirebaseProvider = ({ children }) => {
                 }, (err) => {
                     console.warn('Courses listener error:', err.message);
                     // Try without the where clause for development
-                    const fallbackQuery = query(collection(db, COLLECTIONS.COURSES), orderBy('createdAt', 'desc'));
-                    onSnapshot(fallbackQuery, (snapshot) => {
-                        if (mounted) {
-                            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            setCourses(data);
-                        }
-                    });
+                    try {
+                        const fallbackQuery = query(coursesCollection, orderBy('createdAt', 'desc'));
+                        onSnapshot(fallbackQuery, (snapshot) => {
+                            if (mounted) {
+                                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                setCourses(data);
+                            }
+                        });
+                    } catch (fallbackErr) {
+                        console.error('Fallback courses listener failed:', fallbackErr);
+                    }
                 });
                 unsubscribers.push(unsubCourses);
 
                 // Articles listener - only published
+                const articlesCollection = collection(db, COLLECTIONS.ARTICLES);
                 const articlesQuery = query(
-                    collection(db, COLLECTIONS.ARTICLES),
+                    articlesCollection,
                     where('status', '==', 'published'),
                     orderBy('createdAt', 'desc')
                 );
@@ -134,13 +146,17 @@ export const FirebaseProvider = ({ children }) => {
                 }, (err) => {
                     console.warn('Articles listener error:', err.message);
                     // Fallback without filter
-                    const fallbackQuery = query(collection(db, COLLECTIONS.ARTICLES), orderBy('createdAt', 'desc'));
-                    onSnapshot(fallbackQuery, (snapshot) => {
-                        if (mounted) {
-                            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            setArticles(data);
-                        }
-                    });
+                    try {
+                        const fallbackQuery = query(articlesCollection, orderBy('createdAt', 'desc'));
+                        onSnapshot(fallbackQuery, (snapshot) => {
+                            if (mounted) {
+                                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                setArticles(data);
+                            }
+                        });
+                    } catch (fallbackErr) {
+                        console.error('Fallback articles listener failed:', fallbackErr);
+                    }
                 });
                 unsubscribers.push(unsubArticles);
 
@@ -157,17 +173,20 @@ export const FirebaseProvider = ({ children }) => {
                 }, (err) => {
                     console.warn('Mentors listener error:', err.message);
                     // Fallback
-                    onSnapshot(collection(db, COLLECTIONS.MENTORS), (snapshot) => {
-                        if (mounted) {
-                            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                            setMentors(data);
-                        }
-                    });
+                    try {
+                        onSnapshot(collection(db, COLLECTIONS.MENTORS), (snapshot) => {
+                            if (mounted) {
+                                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                                setMentors(data);
+                            }
+                        });
+                    } catch (fallbackErr) {
+                        console.error('Fallback mentors listener failed:', fallbackErr);
+                    }
                 });
                 unsubscribers.push(unsubMentors);
 
                 // Live Sessions listener - upcoming/active
-                const now = new Date();
                 const sessionsQuery = query(
                     collection(db, COLLECTIONS.LIVE_SESSIONS),
                     orderBy('scheduledAt', 'asc')
@@ -225,6 +244,7 @@ export const FirebaseProvider = ({ children }) => {
                 }
             }
         };
+
 
         setupListeners();
 

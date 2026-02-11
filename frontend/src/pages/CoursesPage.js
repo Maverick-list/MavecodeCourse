@@ -68,7 +68,7 @@ export const CoursesPage = () => {
     if (!firebaseLoading) {
       if (isFirebaseConnected && firebaseCourses.length > 0) {
         setCourses(firebaseCourses);
-        setCategories(firebaseCategories.length > 0 ? firebaseCategories : categories);
+        setCategories(prev => firebaseCategories.length > 0 ? firebaseCategories : prev);
         setLoading(false);
       } else {
         fetchFromAPI();
