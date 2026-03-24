@@ -4,7 +4,7 @@ import {
     Code2, MessageSquare, Sparkles, Send, 
     Cpu, Bug, Zap, Lightbulb, Copy, RefreshCcw, 
     Maximize2, Minimize2, Shield, Eye, BrainCircuit, 
-    Download, Hammer, ExternalLink, Network, FileText, Target, ChevronDown
+    Download, Hammer, ExternalLink, Network, FileText, Target, ChevronDown, Terminal
 } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 import { usePageContext } from '../hooks/usePageContext';
