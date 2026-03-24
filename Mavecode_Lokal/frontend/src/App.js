@@ -35,6 +35,8 @@ import CertificatePage from './pages/CertificatePage';
 import TranslationPage from './pages/TranslationPage';
 import MentorDashboard from './pages/MentorDashboard';
 
+import MentorAppPage from './pages/MentorAppPage';
+
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -99,6 +101,9 @@ const AppContent = () => {
         <Route path="/live" element={<MainLayout><LiveClassPage /></MainLayout>} />
         <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
         <Route path="/mentor" element={<MainLayout><MentorDashboard /></MainLayout>} />
+        
+        {/* Distraction-Free Desktop IDE Layout for MaveMentor */}
+        <Route path="/mentor-app" element={<MentorAppPage />} />
 
         {/* Auth Routes */}
         <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />
