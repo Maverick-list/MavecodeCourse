@@ -102,7 +102,7 @@ const AnimatedAIResponse = ({ content, onLineClick }) => {
     }, [content]);
 
     return (
-        <div className="flex flex-col gap-1.5 relative">
+        <div className="flex flex-col gap-1.5 relative translate-no" translate="no">
             {formatAIResponse(displayedContent, onLineClick)}
             {displayedContent.length < content.length && (
                 <span className="w-1.5 h-4 bg-primary animate-pulse inline-block mt-1 opacity-70" />
