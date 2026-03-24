@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android Preview - Mavecode Mobile</title>
+    <style>
+        :root {
+            --phone-width: 360px;
+            --phone-height: 740px;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --accent-color: #0ea5e9;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: white;
+            overflow: hidden;
+        }
+
+        .device-container {
+            position: relative;
+            perspective: 1000px;
+        }
+
+        /* Ambient Glow */
+        .glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Android Phone Frame */
+        .phone {
+            width: var(--phone-width);
+            height: var(--phone-height);
+            background: #000;
+            border: 12px solid #1e293b;
+            border-radius: 48px;
+            box-shadow:
+                0 50px 100px -20px rgba(0, 0, 0, 0.5),
+                0 30px 60px -30px rgba(0, 0, 0, 0.6),
+                inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Notch / Camera Hole */
+        .notch {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border: 2px solid #1e293b;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+        /* Webview Iframe */
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #0f172a;
+        }
+
+        /* Status Bar Simulation */
+        .status-bar {
+            height: 30px;
+            background: #000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            font-size: 12px;
+            color: white;
+            z-index: 5;
+        }
+
+        /* Bottom Nav Bar Simulation */
+        .nav-bar {
+            height: 48px;
+            background: #000;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 5;
+        }
+
+        .nav-btn {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #64748b;
+            border-radius: 2px;
+        }
+
+        .nav-btn.circle {
+            border-radius: 50%;
+        }
+
+        .nav-btn.back {
+            width: 0;
+            height: 0;
+            border: 7px solid transparent;
+            border-right: 11px solid #64748b;
+            border-left: 0;
+            background: transparent;
+        }
+
+        .label {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(14, 165, 233, 0.2);
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-color);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="glow"></div>
+    <div class="device-container">
+        <div class="label">Mavecode Mobile - Android Preview</div>
+        <div class="phone">
+            <div class="notch"></div>
+            <div class="status-bar">
+                <span>13:51</span>
+                <div style="display:flex; gap:6px;">
+                    <span>📶</span>
+                    <span>🔋</span>
+                </div>
+            </div>
+            <iframe src="native_preview.html" title="Mavecode App"></iframe>
+            <div class="nav-bar">
+                <div class="nav-btn back"></div>
+                <div class="nav-btn circle"></div>
+                <div class="nav-btn"></div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

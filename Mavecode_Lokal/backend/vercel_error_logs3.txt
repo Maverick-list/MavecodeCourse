@@ -1,0 +1,5 @@
+Vercel CLI 50.9.3
+Fetching deployment "mavecodedev-backend-lrwe3iwhn-firza-miftahul-ilmis-projects.vercel.app" in firza-miftahul-ilmis-projects
+Displaying runtime logs for deployment mavecodedev-backend-lrwe3iwhn-firza-miftahul-ilmis-projects.vercel.app (dpl_EvhrsDv65iV2JAQjtWDWKszsS3mq) starting from Mar Mo 17:52:26.06
+
+waiting for new logs...

@@ -1,0 +1,42 @@
+// Firebase Configuration - Shared between MavecodeCourse and Website_Editor
+// Replace these values with your actual Firebase project credentials
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getStorage } from 'firebase/storage';
+
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "YOUR_API_KEY",
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "YOUR_PROJECT.firebaseapp.com",
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "YOUR_PROJECT_ID",
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "YOUR_PROJECT.appspot.com",
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "YOUR_SENDER_ID",
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || "YOUR_APP_ID"
+};
+
+// Initialize Firebase safely
+let app;
+try {
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+    console.log("Firebase initialized successfully");
+  } else {
+    app = getApp();
+  }
+} catch (error) {
+  console.error("Firebase initialization failed:", error);
+  // Create a mock app-like object to prevent crashes elsewhere
+  app = {
+    options: firebaseConfig,
+    name: '[DEFAULT]-MOCK'
+  };
+}
+
+// Initialize services with error handling
+export const db = app.name !== '[DEFAULT]-MOCK' ? getFirestore(app) : null;
+export const auth = app.name !== '[DEFAULT]-MOCK' ? getAuth(app) : null;
+export const storage = app.name !== '[DEFAULT]-MOCK' ? getStorage(app) : null;
+export const googleProvider = new GoogleAuthProvider();
+
+export default app;
+

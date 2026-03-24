@@ -1,0 +1,28 @@
+Vercel CLI 50.9.3
+Fetching deployment "api.mavecode.my.id" in firza-miftahul-ilmis-projects
+Displaying runtime logs for deployment mavecodedev-backend-de6bd85mu-firza-miftahul-ilmis-projects.vercel.app (dpl_APrBAuL9cvNoGdW9tr3cQVK6YieC) starting from Mar Mo 21:52:05.26
+
+waiting for new logs...
+21:52:05.83  🚫  GET  ---  api.mavecode.my.id  ƒ  /api/courses
+--------------------------------------------------------------
+Using cached runtime dependencies
+
+waiting for new logs...
+21:52:05.88  🚫  GET  ---  api.mavecode.my.id  ƒ  /api/courses
+--------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/routing.py", line 732, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/routing.py", line 608, in __aenter__
+    await self._router.startup()
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/routing.py", line 709, in startup
+    await handler()
+  File "/var/task/server.py", line 105, in startup_db_ping
+    if db:
+       ^^
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/pymongo/database.py", line 1339, in __bool__
+    raise NotImplementedError(
+NotImplementedError: Database objects do not implement truth value testing or bool(). Please compare with None instead: database is not None
+
+waiting for new logs...

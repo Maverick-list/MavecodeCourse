@@ -1,0 +1,1378 @@
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from dotenv import load_dotenv
+from starlette.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorClient
+import os
+import logging
+print("--- STARTING MAVECODE BACKEND (REDEPLOY ATTEMPT 2026-01-30_0017) ---")
+print(f"DEBUG: MONGO_URL configured: {bool(os.environ.get('MONGO_URL'))}")
+
+from pathlib import Path
+from pydantic import BaseModel, Field, EmailStr
+from typing import List, Optional
+import uuid
+from datetime import datetime, timezone, timedelta
+import jwt
+import bcrypt
+import random
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
+
+import certifi
+import ssl
+import requests
+
+# MongoDB connection - CRASH PROOF WRAPPER
+try:
+    # Use SRV by default but resolve it manually for stability
+    default_srv = "mongodb+srv://Mavecode:kqfALx4pOQtaPzYt@cluster0.uviruhc.mongodb.net/mavecode_db?retryWrites=true&w=majority&appName=Cluster0&authSource=admin"
+    mongo_url = os.environ.get('MONGO_URL', default_srv)
+    db_name = os.environ.get('DB_NAME', 'mavecode_db')
+    
+    final_url = mongo_url.strip().strip('"').strip("'")
+    
+    # Custom SRV Resolution (DoH hack for Vercel/Serverless stability)
+    if final_url.startswith("mongodb+srv://"):
+        try:
+            print(f"🔄 Resolving SRV via DoH for stability...")
+            url_no_proto = final_url.split('://')[1]
+            if '@' in url_no_proto:
+                credentials_part, rest = url_no_proto.rsplit('@', 1)
+            else:
+                credentials_part, rest = "", url_no_proto
+            
+            if '/' in rest:
+                host_part, params_part = rest.split('/', 1)
+                params_part = "/" + params_part
+            else:
+                host_part, params_part = rest, "/"
+            
+            doh_resp = requests.get(f"https://dns.google/resolve?name=_mongodb._tcp.{host_part}&type=SRV", timeout=5)
+            doh_data = doh_resp.json()
+            if 'Answer' in doh_data:
+                shard_hosts = []
+                for ans in doh_data['Answer']:
+                    srv_bits = ans['data'].split()
+                    shard_hosts.append(f"{srv_bits[3].strip('.')}:{srv_bits[2]}")
+                
+                auth_sep = "@" if credentials_part else ""
+                final_url = f"mongodb://{credentials_part}{auth_sep}{','.join(shard_hosts)}{params_part}"
+                if '?' not in final_url: final_url += '?'
+                if '&ssl=true' not in final_url.lower() and '&tls=true' not in final_url.lower():
+                    final_url += '&ssl=true'
+                print(f"✅ SRV Resolved via DoH: {final_url[:60]}...")
+        except Exception as res_err:
+             print(f"⚠️ DoH Resolution failed, falling back to SRV: {res_err}")
+
+    print(f"DEBUG: Initializing client for {db_name}")
+    client = AsyncIOMotorClient(
+        final_url,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
+        serverSelectionTimeoutMS=20000,
+        connectTimeoutMS=20000,
+        retryWrites=True
+    )
+    db = client[db_name]
+    print(f"SUCCESS: Client record ready for {db_name}")
+except Exception as e:
+    print(f"CRITICAL DB ERROR: {str(e)}")
+    db = None
+
+# JWT config
+JWT_SECRET = os.environ.get('JWT_SECRET', 'mavecode-secret-key')
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_HOURS = 24
+
+# Google OAuth config
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
+# Admin credentials
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'Mavecode07')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'Mavecode07')
+
+app = FastAPI(title="Mavecode API", version="1.0.0")
+
+# Global Exception Handler to ensure CORS on 500s
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_msg = str(exc)
+    logging.error(f"GLOBAL EXCEPTION: {error_msg}")
+    
+    # Generic error response with CORS
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal Server Error", 
+            "message": error_msg if os.environ.get('VERCEL_ENV') != 'production' else "Database connection timeout or server error.",
+            "error_type": type(exc).__name__
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*"
+        }
+    )
+
+@app.on_event("startup")
+async def startup_db_ping():
+    if db is not None:
+        try:
+            print("🚀 Pinging MongoDB...")
+            await db.command("ping")
+            print("✅ MongoDB Ping Successful!")
+        except Exception as e:
+            print(f"❌ MongoDB Ping Failed: {e}")
+
+api_router = APIRouter(prefix="/api")
+security = HTTPBearer()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# ============ Models ============
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+    phone: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class GoogleLoginRequest(BaseModel):
+    token: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    name: str
+    phone: Optional[str] = None
+    is_premium: bool = False
+    stars: int = 0
+    created_at: str
+
+class AdminLogin(BaseModel):
+    username: str
+    password: str
+
+class TokenResponse(BaseModel):
+    token: str
+    user: UserResponse
+
+class AdminTokenResponse(BaseModel):
+    token: str
+    is_admin: bool = True
+
+class CourseCreate(BaseModel):
+    title: str
+    description: str
+    thumbnail: Optional[str] = None
+    price: float = 0
+    is_free: bool = True
+    category: str
+    level: str = "beginner"
+    duration_hours: int = 0
+    instructor: str = "Firza Ilmi"
+
+class CourseResponse(BaseModel):
+    id: str
+    title: str
+    description: str
+    thumbnail: Optional[str] = None
+    price: float
+    is_free: bool
+    category: str
+    level: str
+    duration_hours: int
+    instructor: str
+    created_at: str
+    updated_at: str
+
+class VideoCreate(BaseModel):
+    course_id: str
+    title: str
+    description: Optional[str] = None
+    video_url: str
+    duration_minutes: int = 0
+    order: int = 0
+    is_preview: bool = False
+    type: str = "video"
+
+class VideoResponse(BaseModel):
+    id: str
+    course_id: str
+    title: str
+    description: Optional[str] = None
+    video_url: str
+    duration_minutes: int
+    order: int
+    is_preview: bool
+    type: str = "video"
+    created_at: str
+
+class ArticleCreate(BaseModel):
+    title: str
+    content: str
+    excerpt: Optional[str] = None
+    thumbnail: Optional[str] = None
+    category: str
+    tags: List[str] = []
+    author: str = "Firza Ilmi"
+
+class ArticleResponse(BaseModel):
+    id: str
+    title: str
+    slug: str
+    content: str
+    excerpt: Optional[str] = None
+    thumbnail: Optional[str] = None
+    category: str
+    tags: List[str]
+    author: str
+    views: int
+    created_at: str
+    updated_at: str
+
+class SubscriptionPlan(BaseModel):
+    id: str
+    name: str
+    price_monthly: float
+    price_yearly: float
+    features: List[str]
+    is_popular: bool = False
+
+class LiveClassCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    instructor: str = "Firza Ilmi"
+    scheduled_at: str
+    duration_minutes: int = 60
+    meeting_url: Optional[str] = None
+    max_participants: int = 100
+
+class LiveClassResponse(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = None
+    instructor: str
+    scheduled_at: str
+    duration_minutes: int
+    meeting_url: Optional[str] = None
+    max_participants: int
+    participants_count: int
+    created_at: str
+
+class FAQCreate(BaseModel):
+    question: str
+    answer: str
+    category: str = "general"
+    order: int = 0
+
+class FAQResponse(BaseModel):
+    id: str
+    question: str
+    answer: str
+    category: str
+    order: int
+
+class CreateOrder(BaseModel):
+    course_id: str
+    payment_method: str  # 'bca', 'gopay', etc.
+
+class OrderResponse(BaseModel):
+    id: str
+    user_id: str
+    course_id: str
+    amount: float
+    status: str  # 'pending', 'paid', 'failed'
+    payment_method: str
+    va_number: Optional[str] = None  # Simulated VA Number
+    created_at: str
+
+class HeroContentUpdate(BaseModel):
+    title: str
+    subtitle: str
+    cta_text: str
+    background_image: Optional[str] = None
+
+class ContactMessage(BaseModel):
+    name: str
+    email: EmailStr
+    subject: str
+    message: str
+
+class ChatMessage(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+class ChatResponse(BaseModel):
+    response: str
+    session_id: str
+
+class UserProgress(BaseModel):
+    user_id: str
+    course_id: str
+    video_id: str
+    completed: bool = False
+    progress_percent: int = 0
+
+class CertificateResponse(BaseModel):
+    id: str
+    user_id: str
+    user_name: str
+    course_id: str
+    course_title: str
+    issued_at: str
+    is_signed: bool = False
+    signature_url: Optional[str] = None
+
+class MaveMentorRequest(BaseModel):
+    message: str
+    code: Optional[str] = ""
+    mode: str
+    pageContext: dict
+    history: List[dict] = []
+
+# ============ Helper Functions ============
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def create_token(user_id: str, is_admin: bool = False) -> str:
+    payload = {
+        'user_id': user_id,
+        'is_admin': is_admin,
+        'exp': datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRATION_HOURS)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def decode_token(token: str) -> dict:
+    try:
+        return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    payload = decode_token(credentials.credentials)
+    if payload.get('is_admin'):
+        return {'id': 'admin', 'is_admin': True}
+    user = await db.users.find_one({'id': payload['user_id']}, {'_id': 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user
+
+async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    payload = decode_token(credentials.credentials)
+    if not payload.get('is_admin'):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return {'id': 'admin', 'is_admin': True}
+
+def slugify(text: str) -> str:
+    import re
+    text = text.lower().strip()
+    text = re.sub(r'[^\w\s-]', '', text)
+    text = re.sub(r'[-\s]+', '-', text)
+    return text
+
+# ============ Auth Routes ============
+
+@api_router.post("/auth/register", response_model=TokenResponse)
+async def register(data: UserCreate):
+    existing = await db.users.find_one({'email': data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    user_doc = {
+        'id': user_id,
+        'email': data.email,
+        'password': hash_password(data.password),
+        'name': data.name,
+        'phone': data.phone,
+        'is_premium': False,
+        'stars': 0,
+        'created_at': now
+    }
+    await db.users.insert_one(user_doc)
+    
+    token = create_token(user_id)
+    user_response = UserResponse(
+        id=user_id, email=data.email, name=data.name, 
+        phone=data.phone, is_premium=False, stars=0, created_at=now
+    )
+    return TokenResponse(token=token, user=user_response)
+
+@api_router.post("/auth/login", response_model=TokenResponse)
+async def login(data: UserLogin):
+    user = await db.users.find_one({'email': data.email}, {'_id': 0})
+    if not user or not verify_password(data.password, user['password']):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    
+    token = create_token(user['id'])
+    return TokenResponse(token=token, user=UserResponse(**user))
+
+@api_router.post("/auth/google", response_model=TokenResponse)
+async def google_login(data: GoogleLoginRequest):
+    logger.info(f"DEBUG: Received Google Token (first 50 chars): {data.token[:50]}...")
+    email = None
+    name = None
+    picture = None
+
+    try:
+        # Method 1: Use google-auth library for proper verification
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+
+        try:
+            idinfo = google_id_token.verify_oauth2_token(
+                data.token,
+                google_requests.Request(),
+                GOOGLE_CLIENT_ID
+            )
+            email = idinfo.get('email')
+            name = idinfo.get('name', 'Google User')
+            picture = idinfo.get('picture')
+            logger.info(f"DEBUG: Google-auth verified successfully: email={email}, name={name}")
+        except Exception as e1:
+            logger.warning(f"WARNING: google-auth verification failed: {e1}. Trying PyJWT fallback...")
+            
+            # Method 2: Fallback - decode without signature verification (for demo/dev)
+            try:
+                payload = jwt.decode(data.token, algorithms=["RS256"], options={"verify_signature": False})
+                email = payload.get('email')
+                name = payload.get('name', 'Google User')
+                picture = payload.get('picture')
+                logger.info(f"DEBUG: PyJWT fallback decoded: email={email}, name={name}")
+            except Exception as e2:
+                logger.error(f"CRITICAL: Both verification methods failed. google-auth: {e1}, PyJWT: {e2}")
+                raise HTTPException(status_code=400, detail=f"Token validation error: google-auth: {str(e1)} | PyJWT: {str(e2)}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"CRITICAL ERROR in google_login: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Token validation error: {str(e)}")
+
+    if not email:
+        logger.error("ERROR: No email found in token payload")
+        raise HTTPException(status_code=400, detail="Invalid Google Token: Email missing")
+
+    user = await db.users.find_one({'email': email}, {'_id': 0})
+    now = datetime.now(timezone.utc).isoformat()
+
+    if not user:
+        # Register new user from Google
+        user_id = str(uuid.uuid4())
+        user_doc = {
+            'id': user_id,
+            'email': email,
+            'password': hash_password(str(uuid.uuid4())),  # Random password
+            'name': name,
+            'phone': None,
+            'is_premium': False,
+            'stars': 0,
+            'picture': picture,
+            'created_at': now
+        }
+        await db.users.insert_one(user_doc)
+        user = user_doc
+    else:
+        # Update existing user's name and picture if they changed
+        update_fields = {}
+        if name and user.get('name') != name:
+            update_fields['name'] = name
+        if picture and user.get('picture') != picture:
+            update_fields['picture'] = picture
+        if update_fields:
+            await db.users.update_one({'email': email}, {'$set': update_fields})
+            user.update(update_fields)
+
+    token = create_token(user['id'])
+    return TokenResponse(token=token, user=UserResponse(**{k: v for k, v in user.items() if k in ['id', 'email', 'name', 'phone', 'is_premium', 'stars', 'created_at']}))
+
+@api_router.post("/auth/admin", response_model=AdminTokenResponse)
+async def admin_login(data: AdminLogin):
+    if data.username != ADMIN_USERNAME or data.password != ADMIN_PASSWORD:
+        raise HTTPException(status_code=401, detail="Invalid admin credentials")
+    token = create_token('admin', is_admin=True)
+    return AdminTokenResponse(token=token, is_admin=True)
+
+@api_router.get("/auth/me", response_model=UserResponse)
+async def get_me(user: dict = Depends(get_current_user)):
+    if user.get('is_admin'):
+        return UserResponse(id='admin', email='admin@mavecode.id', name='Admin', is_premium=True, stars=9999, created_at=datetime.now(timezone.utc).isoformat())
+    return UserResponse(**{k: v for k, v in user.items() if k != 'password'})
+
+# ============ Course Routes ============
+
+@api_router.get("/courses", response_model=List[CourseResponse])
+async def get_courses(category: Optional[str] = None, is_free: Optional[bool] = None):
+    query = {}
+    if category:
+        query['category'] = category
+    if is_free is not None:
+        query['is_free'] = is_free
+    courses = await db.courses.find(query, {'_id': 0}).to_list(100)
+    return courses
+
+@api_router.get("/courses/{course_id}", response_model=CourseResponse)
+async def get_course(course_id: str):
+    course = await db.courses.find_one({'id': course_id}, {'_id': 0})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return course
+
+@api_router.post("/courses", response_model=CourseResponse)
+async def create_course(data: CourseCreate, admin: dict = Depends(get_admin_user)):
+    course_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    course_doc = {
+        'id': course_id,
+        **data.model_dump(),
+        'created_at': now,
+        'updated_at': now
+    }
+    await db.courses.insert_one(course_doc)
+    return CourseResponse(**course_doc)
+
+@api_router.put("/courses/{course_id}", response_model=CourseResponse)
+async def update_course(course_id: str, data: CourseCreate, admin: dict = Depends(get_admin_user)):
+    now = datetime.now(timezone.utc).isoformat()
+    result = await db.courses.update_one(
+        {'id': course_id},
+        {'$set': {**data.model_dump(), 'updated_at': now}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    course = await db.courses.find_one({'id': course_id}, {'_id': 0})
+    return CourseResponse(**course)
+
+@api_router.delete("/courses/{course_id}")
+async def delete_course(course_id: str, admin: dict = Depends(get_admin_user)):
+    result = await db.courses.delete_one({'id': course_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Course not found")
+    await db.videos.delete_many({'course_id': course_id})
+    return {"message": "Course deleted"}
+
+# ============ Video Routes ============
+
+@api_router.get("/courses/{course_id}/videos", response_model=List[VideoResponse])
+async def get_course_videos(course_id: str):
+    videos = await db.videos.find({'course_id': course_id}, {'_id': 0}).sort('order', 1).to_list(100)
+    return videos
+
+@api_router.post("/videos", response_model=VideoResponse)
+async def create_video(data: VideoCreate, admin: dict = Depends(get_admin_user)):
+    video_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    video_doc = {
+        'id': video_id,
+        **data.model_dump(),
+        'created_at': now
+    }
+    await db.videos.insert_one(video_doc)
+    return VideoResponse(**video_doc)
+
+@api_router.put("/videos/{video_id}", response_model=VideoResponse)
+async def update_video(video_id: str, data: VideoCreate, admin: dict = Depends(get_admin_user)):
+    result = await db.videos.update_one({'id': video_id}, {'$set': data.model_dump()})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Video not found")
+    video = await db.videos.find_one({'id': video_id}, {'_id': 0})
+    return VideoResponse(**video)
+
+@api_router.delete("/videos/{video_id}")
+async def delete_video(video_id: str, admin: dict = Depends(get_admin_user)):
+    result = await db.videos.delete_one({'id': video_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Video not found")
+    return {"message": "Video deleted"}
+
+# ============ Article Routes ============
+
+@api_router.get("/articles", response_model=List[ArticleResponse])
+async def get_articles(category: Optional[str] = None, tag: Optional[str] = None):
+    query = {}
+    if category:
+        query['category'] = category
+    if tag:
+        query['tags'] = tag
+    articles = await db.articles.find(query, {'_id': 0}).sort('created_at', -1).to_list(100)
+    return articles
+
+@api_router.get("/articles/{slug}", response_model=ArticleResponse)
+async def get_article(slug: str):
+    article = await db.articles.find_one({'slug': slug}, {'_id': 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    await db.articles.update_one({'slug': slug}, {'$inc': {'views': 1}})
+    article['views'] = article.get('views', 0) + 1
+    return article
+
+@api_router.post("/articles", response_model=ArticleResponse)
+async def create_article(data: ArticleCreate, admin: dict = Depends(get_admin_user)):
+    article_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    slug = slugify(data.title) + '-' + article_id[:8]
+    article_doc = {
+        'id': article_id,
+        'slug': slug,
+        **data.model_dump(),
+        'views': 0,
+        'created_at': now,
+        'updated_at': now
+    }
+    await db.articles.insert_one(article_doc)
+    return ArticleResponse(**article_doc)
+
+@api_router.put("/articles/{article_id}", response_model=ArticleResponse)
+async def update_article(article_id: str, data: ArticleCreate, admin: dict = Depends(get_admin_user)):
+    now = datetime.now(timezone.utc).isoformat()
+    result = await db.articles.update_one(
+        {'id': article_id},
+        {'$set': {**data.model_dump(), 'updated_at': now}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Article not found")
+    article = await db.articles.find_one({'id': article_id}, {'_id': 0})
+    return ArticleResponse(**article)
+
+@api_router.delete("/articles/{article_id}")
+async def delete_article(article_id: str, admin: dict = Depends(get_admin_user)):
+    result = await db.articles.delete_one({'id': article_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return {"message": "Article deleted"}
+
+# ============ Subscription Plans ============
+
+@api_router.get("/subscriptions", response_model=List[SubscriptionPlan])
+async def get_subscription_plans():
+    return [
+        SubscriptionPlan(
+            id="basic",
+            name="Basic",
+            price_monthly=99000,
+            price_yearly=999000,
+            features=["Akses semua kursus gratis", "Sertifikat digital", "Forum komunitas", "Dukungan email"],
+            is_popular=False
+        ),
+        SubscriptionPlan(
+            id="pro",
+            name="Pro",
+            price_monthly=199000,
+            price_yearly=1999000,
+            features=["Semua fitur Basic", "Akses kursus premium", "Live class mingguan", "Mentoring 1-on-1", "Project review"],
+            is_popular=True
+        ),
+        SubscriptionPlan(
+            id="enterprise",
+            name="Enterprise",
+            price_monthly=499000,
+            price_yearly=4999000,
+            features=["Semua fitur Pro", "Tim unlimited", "Custom learning path", "Priority support 24/7", "API access", "White-label option"],
+            is_popular=False
+        )
+    ]
+
+# ============ Live Class Routes ============
+
+@api_router.get("/live-classes", response_model=List[LiveClassResponse])
+async def get_live_classes():
+    classes = await db.live_classes.find({}, {'_id': 0}).sort('scheduled_at', 1).to_list(100)
+    return classes
+
+@api_router.post("/live-classes", response_model=LiveClassResponse)
+async def create_live_class(data: LiveClassCreate, admin: dict = Depends(get_admin_user)):
+    class_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    class_doc = {
+        'id': class_id,
+        **data.model_dump(),
+        'participants_count': 0,
+        'created_at': now
+    }
+    await db.live_classes.insert_one(class_doc)
+    return LiveClassResponse(**class_doc)
+
+@api_router.post("/live-classes/{class_id}/join")
+async def join_live_class(class_id: str, user: dict = Depends(get_current_user)):
+    live_class = await db.live_classes.find_one({'id': class_id}, {'_id': 0})
+    if not live_class:
+        raise HTTPException(status_code=404, detail="Live class not found")
+    await db.live_classes.update_one({'id': class_id}, {'$inc': {'participants_count': 1}})
+    return {"message": "Joined successfully", "meeting_url": live_class.get('meeting_url')}
+
+@api_router.delete("/live-classes/{class_id}")
+async def delete_live_class(class_id: str, admin: dict = Depends(get_admin_user)):
+    result = await db.live_classes.delete_one({'id': class_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Live class not found")
+    return {"message": "Live class deleted"}
+
+# ============ FAQ Routes ============
+
+@api_router.get("/faqs", response_model=List[FAQResponse])
+async def get_faqs(category: Optional[str] = None):
+    query = {}
+    if category:
+        query['category'] = category
+    faqs = await db.faqs.find(query, {'_id': 0}).sort('order', 1).to_list(100)
+    return faqs
+
+@api_router.post("/faqs", response_model=FAQResponse)
+async def create_faq(data: FAQCreate, admin: dict = Depends(get_admin_user)):
+    faq_id = str(uuid.uuid4())
+    faq_doc = {'id': faq_id, **data.model_dump()}
+    await db.faqs.insert_one(faq_doc)
+    return FAQResponse(**faq_doc)
+
+# ============ Payment & Orders ============
+
+@api_router.post("/orders", response_model=OrderResponse)
+async def create_order(data: CreateOrder, user: dict = Depends(get_current_user)):
+    course = await db.courses.find_one({'id': data.course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Check if already purchased
+    # (Simplified: In real app check transaction history)
+    
+    order_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Simulate VA Number generation based on method
+    va_number = None
+    if data.payment_method in ['bca', 'mandiri', 'bni', 'bri']:
+        va_number = f"88{random.randint(10000000, 99999999)}"
+    
+    order_doc = {
+        'id': order_id,
+        'user_id': user['id'],
+        'course_id': data.course_id,
+        'amount': course['price'],
+        'status': 'pending',
+        'payment_method': data.payment_method,
+        'va_number': va_number,
+        'created_at': now
+    }
+    
+    await db.orders.insert_one(order_doc)
+    return OrderResponse(**order_doc)
+
+@api_router.post("/orders/{order_id}/pay")
+async def pay_order(order_id: str, user: dict = Depends(get_current_user)):
+    # Simulate payment success
+    result = await db.orders.update_one(
+        {'id': order_id, 'user_id': user['id']},
+        {'$set': {'status': 'paid'}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # GRANT ACCESS: For now, buying any course grants Premium status (Subscription Model)
+    # In a full system, we would add to a 'purchased_courses' list or 'subscriptions' collection.
+    await db.users.update_one(
+        {'id': user['id']}, 
+        {'$set': {'is_premium': True}}
+    )
+    
+    return {"message": "Payment successful", "status": "paid"}
+
+@api_router.put("/faqs/{faq_id}", response_model=FAQResponse)
+async def update_faq(faq_id: str, data: FAQCreate, admin: dict = Depends(get_admin_user)):
+    result = await db.faqs.update_one({'id': faq_id}, {'$set': data.model_dump()})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    faq = await db.faqs.find_one({'id': faq_id}, {'_id': 0})
+    return FAQResponse(**faq)
+
+@api_router.delete("/faqs/{faq_id}")
+async def delete_faq(faq_id: str, admin: dict = Depends(get_admin_user)):
+    result = await db.faqs.delete_one({'id': faq_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="FAQ not found")
+    return {"message": "FAQ deleted"}
+
+# ============ Hero Content ============
+
+@api_router.get("/hero")
+async def get_hero_content():
+    hero = await db.settings.find_one({'type': 'hero'}, {'_id': 0})
+    if not hero:
+        return {
+            'title': 'Mulai Karir Codingmu Sekarang',
+            'subtitle': 'Belajar coding dari nol hingga mahir bersama mentor berpengalaman. Dapatkan skill yang dibutuhkan industri teknologi.',
+            'cta_text': 'Mulai Belajar Coding',
+            'background_image': 'https://images.unsplash.com/photo-1649451844813-3130d6f42f8a?crop=entropy&cs=srgb&fm=jpg&q=85'
+        }
+    return hero
+
+@api_router.put("/hero")
+async def update_hero_content(data: HeroContentUpdate, admin: dict = Depends(get_admin_user)):
+    await db.settings.update_one(
+        {'type': 'hero'},
+        {'$set': {**data.model_dump(), 'type': 'hero'}},
+        upsert=True
+    )
+    return {"message": "Hero content updated"}
+
+# ============ Contact ============
+
+@api_router.post("/contact")
+async def send_contact(data: ContactMessage):
+    message_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    message_doc = {
+        'id': message_id,
+        **data.model_dump(),
+        'created_at': now,
+        'read': False
+    }
+    await db.contact_messages.insert_one(message_doc)
+    return {"message": "Message sent successfully", "id": message_id}
+
+@api_router.get("/contact/messages")
+async def get_contact_messages(admin: dict = Depends(get_admin_user)):
+    messages = await db.contact_messages.find({}, {'_id': 0}).sort('created_at', -1).to_list(100)
+    return messages
+
+# ============ User Progress ============
+
+@api_router.post("/progress")
+async def update_progress(data: UserProgress, user: dict = Depends(get_current_user)):
+    existing_progress = await db.progress.find_one(
+        {'user_id': user['id'], 'course_id': data.course_id, 'video_id': data.video_id}
+    )
+    
+    if data.completed and (not existing_progress or not existing_progress.get('completed')):
+        video = await db.videos.find_one({'id': data.video_id})
+        stars_to_add = 10
+        if video and video.get('type') == 'quiz':
+            stars_to_add = 50
+        await db.users.update_one({'id': user['id']}, {'$inc': {'stars': stars_to_add}})
+
+    await db.progress.update_one(
+        {'user_id': user['id'], 'course_id': data.course_id, 'video_id': data.video_id},
+        {'$set': {'completed': data.completed, 'progress_percent': data.progress_percent}},
+        upsert=True
+    )
+    return {"message": "Progress updated"}
+
+@api_router.get("/progress/{course_id}")
+async def get_progress(course_id: str, user: dict = Depends(get_current_user)):
+    progress = await db.progress.find(
+        {'user_id': user['id'], 'course_id': course_id}, 
+        {'_id': 0}
+    ).to_list(100)
+    return progress
+
+# ============ AI Chatbot ============
+import httpx
+
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent'
+SYSTEM_PROMPT = """Kamu adalah Mavecode AI, asisten cerdas untuk platform belajar coding Mavecode. 
+
+## PRINSIP PERCAKAPAN KAMU:
+1. **DILARANG memberikan jawaban langsung jika permintaan user masih umum.** 
+2. **SELALU berikan opsi pilihan (bullet points) agar user mudah memilih.**
+3. **Posisikan diri sebagai konsultan yang sedang melakukan "discovery" kebutuhan user.**
+4. **Memberikan rekomendasi aksi di akhir setiap jawaban.**
+
+## TAHAPAN INTERAKSI:
+
+### FASE 1: KLARIFIKASI (Jika user baru menyapa atau bertanya umum)
+- Jangan langsung list semua kursus.
+- Tanyakan level mereka dan minat spesifiknya.
+- Berikan pilihan seperti: [A] Web Dev, [B] Mobile Dev, [C] Data Science.
+- Contoh: "Hai! Aku seneng banget kamu mau belajar coding. 🚀 Biar aku kasih saran yang pas, kamu mau mulai dari mana nih? Ada 3 pilihan utama:
+  1. Bikin Website (Web Dev)
+  2. Bikin App HP (Mobile Dev)
+  3. Belajar Data/AI (Data Science)
+  
+Kamu pilih nomor berapa? 😊"
+
+### FASE 2: PENDALAMAN (Jika sudah pilih bidang)
+- Tanyakan level pengalaman: "Sudah pernah coding sebelumnya atau bener-bener dari nol? 🤔"
+- Tanyakan tujuan: "Mau buat karir atau sekadar hobi/proyek sampingan? 💼"
+
+### FASE 3: REKOMENDASI (Jika sudah jelas)
+- Berikan rekomendasi kursus Mavecode yang relevan.
+- Berikan alasan kenapa itu yang terbaik untuk mereka.
+- Sertakan link navigasi: [NAVIGATE:/courses/{id}]
+
+### FASE 4: REKOMENDASI PENUTUP (Wajib di akhir jawaban)
+- Selalu berikan 'Rekomendasi Lanjutan'.
+- Contoh: "Setelah kursus ini, aku sarankan kamu baca artikel 'Portfolio Developer' juga. Mau aku antar ke sana? [NAVIGATE:/articles]"
+
+## INFORMASI PENGETAHUAN (KURSUS MAVECODE):
+- Full Stack JavaScript (React, Node.js) - Rp 299.000 (Terpopuler)
+- Python Dasar & Automation - Rp 199.000 (Untuk Pemula Banget)
+- React Native Mobile - Rp 349.000
+- Machine Learning with Python - Rp 399.000
+- DevOps & Cloud Essentials - Rp 449.000
+
+## ATURAN KHUSUS:
+- Jika user panggil "Hi Mavecode", meresponlah dengan suara ceria (Text-to-Speech friendly).
+- Berikan insight tambahan yang menunjukkan kamu "berpikir mandiri" (misal: "Menurutku, belajar Web Dev di 2025 itu paling menguntungkan karena...").
+
+Ingat: Tanya dulu -> Beri Opsi -> Jawab Jelas -> Beri Rekomendasi Selanjutnya!"""
+
+@api_router.post("/chat", response_model=ChatResponse)
+async def chat_with_ai(data: ChatMessage):
+    session_id = data.session_id or str(uuid.uuid4())
+    api_key = os.environ.get('GEMINI_API_KEY')
+    
+    if not api_key:
+        return ChatResponse(
+            response="Waduh, kuncinya (API Key) lagi ilang nih. 😅 Coba cek .env ya!",
+            session_id=session_id
+        )
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {
+                "system_instruction": {
+                    "parts": [{"text": SYSTEM_PROMPT}]
+                },
+                "contents": [
+                    {"role": "user", "parts": [{"text": data.message}]}
+                ],
+                "generationConfig": {
+                    "temperature": 0.8,
+                    "topK": 40,
+                    "topP": 0.95,
+                    "maxOutputTokens": 1024
+                }
+            }
+            
+            response = await client.post(
+                f"{GEMINI_URL}?key={api_key}",
+                json=payload
+            )
+            
+            result = response.json()
+            
+            if response.status_code != 200:
+                print(f"DEBUG GEMINI ERROR: Status {response.status_code}, Body: {result}")
+            
+            if response.status_code == 429:
+                return ChatResponse(
+                    response="Aduh, aku lagi rame banget nih yang nanya! ⏳ Coba colek lagi 1 menit lagi ya!",
+                    session_id=session_id
+                )
+            
+            if "candidates" in result and result["candidates"]:
+                ai_response = result["candidates"][0]["content"]["parts"][0]["text"]
+                return ChatResponse(response=ai_response, session_id=session_id)
+            elif "error" in result:
+                err_msg = result['error'].get('message', 'Unknown Error')
+                return ChatResponse(
+                    response=f"Ups, ada gangguan sinyal ke otak AI-ku. 😅 (Status: {response.status_code})",
+                    session_id=session_id
+                )
+            else:
+                raise Exception("Format response Gemini tidak dikenal")
+                
+    except Exception as e:
+        print(f"CRITICAL CHAT ERROR: {e}")
+        return ChatResponse(
+            response="Aduh, otak AI-ku lagi konslet. 🔌 Coba tanya lagi bentar lagi ya!",
+            session_id=session_id
+        )
+
+@api_router.post("/mavementor", response_model=ChatResponse)
+async def mavementor_chat(data: MaveMentorRequest):
+    session_id = str(uuid.uuid4())
+    api_key = os.environ.get('GEMINI_API_KEY')
+    
+    if not api_key:
+        return ChatResponse(
+            response="Waduh, kuncinya (API Key) lagi ilang nih. 😅 Coba cek .env ya!",
+            session_id=session_id
+        )
+    
+    try:
+        language = data.pageContext.get("language", "JavaScript")
+        topic = data.pageContext.get("topic", "General Coding")
+        
+        system_prompt = f"""Kamu adalah MaveMentor, Asisten AI dan Code Reviewer pribadimu untuk platform Mavecode.
+Kamu sedang membantu pengguna belajar: {topic} (Konteks Terdeteksi: {language}).
+
+INSTRUKSI KRITIS:
+1. Format: Gunakan aturan Prettier/ESLint yang ketat. Pastikan baris kode bersih, berlekuk, dan gunakan gaya modern.
+2. Nada: Ramah, ringkas, santai namun profesional, edukatif, ala komunitas tech ASEAN (gunakan bahasa yang mudah dicerna).
+3. Mode Code Editor: Identifikasi bug, jelaskan secara simpel, dan berikan perbaikan kode yang sudah dioptimasi.
+4. Mode Chat: Beri penjelasan konseptual tingkat lanjut dengan contoh sepotong kecil jika membantu.
+5. Gunakan Markdown untuk format balasanmu. Gunakan blok kode baku (```language) jika perlu menampilkan kode.
+"""
+        
+        contents = []
+        for msg in data.history:
+            role = "model" if msg.get("role") == "assistant" else "user"
+            contents.append({"role": role, "parts": [{"text": msg.get("content", "")}]})
+            
+        user_prompt = ""
+        if data.mode == "code":
+            user_prompt = f"Tolong review kode berikut:\n\n```{language}\n{data.code}\n```\n\nPesan/Instruksi dariku: {data.message or 'Review kode ini untuk best practice dan bug tersembunyi.'}"
+        else:
+            user_prompt = data.message or "Halo MaveMentor!"
+            
+        if not contents:
+             user_prompt = f"{system_prompt}\n\n---\n\nPesan User:\n{user_prompt}"
+             contents.append({"role": "user", "parts": [{"text": user_prompt}]})
+        else:
+             if contents[0]["role"] == "user":
+                  contents[0]["parts"][0]["text"] = f"{system_prompt}\n\n---\n\n{contents[0]['parts'][0]['text']}"
+             contents.append({"role": "user", "parts": [{"text": user_prompt}]})
+             
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            payload = {
+                "contents": contents,
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 2048
+                }
+            }
+            
+            response = await client.post(
+                f"{GEMINI_URL}?key={api_key}",
+                json=payload
+            )
+            
+            result = response.json()
+            
+            if response.status_code == 429:
+                return ChatResponse(
+                    response="Aduh, antrian review kode lagi padat! ⏳ Coba lagi ya beberapa detik lagi.",
+                    session_id=session_id
+                )
+                
+            if "candidates" in result and result["candidates"]:
+                ai_response = result["candidates"][0]["content"]["parts"][0]["text"]
+                return ChatResponse(response=ai_response, session_id=session_id)
+            elif "error" in result:
+                return ChatResponse(
+                    response=f"Ups, ada gangguan sinyal sistem MaveMentor. 😅 (Status: {response.status_code})",
+                    session_id=session_id
+                )
+            else:
+                return ChatResponse(response="Respon AI tidak dapat dikenali sistem.", session_id=session_id)
+                
+    except Exception as e:
+        print(f"CRITICAL MAVEMENTOR ERROR: {e}")
+        return ChatResponse(
+            response="Aduh, otak AI-ku lagi nge-hang sebentar. 🔌 Coba tanya lagi ya!",
+            session_id=session_id
+        )
+
+# ============ Categories ============
+
+@api_router.get("/categories")
+async def get_categories():
+    return [
+        {"id": "web", "name": "Web Development", "icon": "Globe"},
+        {"id": "mobile", "name": "Mobile Development", "icon": "Smartphone"},
+        {"id": "backend", "name": "Backend", "icon": "Server"},
+        {"id": "frontend", "name": "Frontend", "icon": "Layout"},
+        {"id": "data", "name": "Data Science", "icon": "BarChart"},
+        {"id": "devops", "name": "DevOps", "icon": "Cloud"},
+    ]
+
+# ============ Stats ============
+
+@api_router.get("/stats")
+async def get_stats():
+    courses_count = await db.courses.count_documents({})
+    users_count = await db.users.count_documents({})
+    articles_count = await db.articles.count_documents({})
+    certs_count = await db.certificates.count_documents({})
+    return {
+        "courses": courses_count + 50,
+        "students": users_count + 1000,
+        "articles": articles_count + 10,
+        "certificates": certs_count + 15,
+        "mentors": 5
+    }
+
+# ============ Seed Data ============
+
+@api_router.post("/seed")
+async def seed_data():
+    """Seed initial data for the platform"""
+    now = datetime.now(timezone.utc).isoformat()
+    
+    # Seed courses
+    # Course IDs
+    js_id = str(uuid.uuid4())
+    react_id = str(uuid.uuid4())
+    python_id = str(uuid.uuid4())
+    node_id = str(uuid.uuid4())
+    html_id = str(uuid.uuid4())
+    flutter_id = str(uuid.uuid4())
+
+    # Seed courses
+    courses = [
+        {
+            'id': js_id, 'title': 'JavaScript Fundamentals', 'description': 'Pelajari dasar-dasar JavaScript dari variabel hingga async/await. Cocok untuk pemula yang ingin memulai karir sebagai web developer.',
+            'thumbnail': 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=400', 'price': 0, 'is_free': True, 'category': 'backend', 'level': 'beginner', 'duration_hours': 10, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': react_id, 'title': 'React.js Mastery', 'description': 'Bangun aplikasi web modern dengan React.js. Dari komponen dasar hingga state management dengan Redux.',
+            'thumbnail': 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400', 'price': 199000, 'is_free': False, 'category': 'frontend', 'level': 'intermediate', 'duration_hours': 20, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': python_id, 'title': 'Python untuk Data Science', 'description': 'Kuasai Python dan library populer seperti Pandas, NumPy, dan Matplotlib untuk analisis data.',
+            'thumbnail': 'https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=400', 'price': 299000, 'is_free': False, 'category': 'data', 'level': 'intermediate', 'duration_hours': 25, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': node_id, 'title': 'Node.js Backend Development', 'description': 'Buat REST API dan backend scalable dengan Node.js, Express, dan MongoDB.',
+            'thumbnail': 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400', 'price': 249000, 'is_free': False, 'category': 'backend', 'level': 'intermediate', 'duration_hours': 18, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': html_id, 'title': 'HTML & CSS untuk Pemula', 'description': 'Langkah pertama menjadi web developer. Pelajari cara membuat website dari nol.',
+            'thumbnail': 'https://images.unsplash.com/photo-1621839673705-6617adf9e890?w=400', 'price': 0, 'is_free': True, 'category': 'web', 'level': 'beginner', 'duration_hours': 8, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': flutter_id, 'title': 'Flutter Mobile App Development', 'description': 'Buat aplikasi mobile cross-platform dengan satu codebase menggunakan Flutter dan Dart.',
+            'thumbnail': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400', 'price': 349000, 'is_free': False, 'category': 'mobile', 'level': 'intermediate', 'duration_hours': 30, 'instructor': 'Firza Ilmi', 'created_at': now, 'updated_at': now
+        }
+    ]
+
+    # ============ Seed Videos ============
+    print("\n🎥 Seeding videos & exercises...")
+    videos = []
+    
+    # JS Videos & Moduls
+    videos.extend([
+        {'id': str(uuid.uuid4()), 'course_id': js_id, 'title': '1. Pengenalan JavaScript Paling Dasar', 'video_url': 'https://www.youtube.com/watch?v=RUTV_5m4VeI', 'duration_minutes': 15, 'is_preview': True, 'order': 1, 'type': 'video', 'description': 'Silakan tonton video ini untuk mengerti konsep JS.', 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': js_id, 'title': '2. Materi: Dokumentasi Asli JS (MDN)', 'video_url': 'https://www.youtube.com/watch?v=W6NZfCO5SIk', 'duration_minutes': 20, 'is_preview': False, 'order': 2, 'type': 'video', 'description': 'Silahkan baca dokumentasi resmi di MDN Web Docs sebelum lanjut: https://developer.mozilla.org/id/docs/Web/JavaScript/Guide/Introduction', 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': js_id, 'title': '3. Latihan JS (Tingkat: MUDAH)', 'video_url': 'quiz', 'duration_minutes': 10, 'is_preview': False, 'order': 3, 'type': 'quiz', 'description': 'Uji pemahaman dasar mu! Selesaikan latihan gampang ini untuk dapat bintang tambahan.', 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': js_id, 'title': '4. Latihan JS (Tingkat: SULIT)', 'video_url': 'quiz', 'duration_minutes': 30, 'is_preview': False, 'order': 4, 'type': 'quiz', 'description': 'Lebih menantang, mari kita uji skill logika JavaScript kamu.', 'created_at': now}
+    ])
+
+    # React Videos
+    videos.extend([
+        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'Intro to React & Setup', 'video_url': 'https://www.youtube.com/watch?v=bMknfKXIFA8', 'duration_minutes': 25, 'is_preview': True, 'order': 1, 'type': 'video', 'description': 'Panduan React.js pemula oleh programmer favorit.', 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'Materi Dokumentasi Resmi React', 'video_url': 'https://www.youtube.com/watch?v=bMknfKXIFA8', 'duration_minutes': 15, 'is_preview': False, 'order': 2, 'type': 'video', 'description': 'Baca panduan resminya di react.dev/learn', 'created_at': now},
+        {'id': str(uuid.uuid4()), 'course_id': react_id, 'title': 'Latihan Analisa React DOM (Sedang)', 'video_url': 'quiz', 'duration_minutes': 20, 'is_preview': False, 'order': 3, 'type': 'quiz', 'description': 'Kerjakan soal-soal ini untuk mengklaim reward.', 'created_at': now}
+    ])
+
+    await db.courses.delete_many({})
+    await db.courses.insert_many(courses)
+    
+    await db.videos.delete_many({})
+    if videos:
+        await db.videos.insert_many(videos)
+    
+    # Seed articles
+    articles = [
+        {
+            'id': str(uuid.uuid4()), 'slug': 'masa-depan-ai-2025', 'title': 'Masa Depan Artificial Intelligence di Tahun 2025',
+            'content': 'Generative AI telah mengubah cara kita bekerja. Di tahun 2025, kita akan melihat integrasi AI yang lebih dalam di setiap aspek pengembangan software. Agen AI akan menjadi rekan kerja standar bagi para developer...',
+            'excerpt': 'Bagaimana AI akan berevolusi dan apa dampaknya bagi para pengembang di masa depan?',
+            'thumbnail': 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400',
+            'category': 'teknologi', 'tags': ['AI', 'Future', 'Tech'], 'author': 'Firza Ilmi', 'views': 3450, 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': str(uuid.uuid4()), 'slug': 'belajar-prompt-engineering', 'title': 'Panduan Lengkap Prompt Engineering untuk Developer',
+            'content': 'Menguasai cara berkomunikasi dengan Model Bahasa Besar (LLM) adalah skill krusial saat ini. Berikut adalah teknik-teknik fundamental dalam prompt engineering...',
+            'excerpt': 'Tingkatkan efektivitas penggunaan AI Anda dengan penguasaan Prompt Engineering.',
+            'thumbnail': 'https://images.unsplash.com/photo-1676299081847-824916de030a?w=400',
+            'category': 'tutorial', 'tags': ['AI', 'Prompting', 'Productivity'], 'author': 'Firza Ilmi', 'views': 2100, 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': str(uuid.uuid4()), 'slug': 'tips-belajar-coding-efektif', 'title': '10 Tips Belajar Coding yang Efektif untuk Pemula',
+            'content': 'Belajar coding bisa terasa overwhelming di awal. Berikut 10 tips yang bisa membantu perjalanan coding kamu...',
+            'excerpt': 'Temukan cara belajar coding yang efektif dengan 10 tips praktis ini.',
+            'thumbnail': 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400',
+            'category': 'tips', 'tags': ['coding', 'pemula', 'tips'], 'author': 'Firza Ilmi', 'views': 1250, 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': str(uuid.uuid4()), 'slug': 'trend-teknologi-2025', 'title': 'Trend Teknologi yang Wajib Dipelajari di 2025',
+            'content': 'Teknologi terus berkembang pesat. Berikut trend yang perlu kamu perhatikan di tahun 2025...',
+            'excerpt': 'Ketahui skill teknologi yang paling dicari di tahun 2025.',
+            'thumbnail': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400',
+            'category': 'teknologi', 'tags': ['trend', 'karir', '2025'], 'author': 'Firza Ilmi', 'views': 890, 'created_at': now, 'updated_at': now
+        },
+        {
+            'id': str(uuid.uuid4()), 'slug': 'cara-membuat-portfolio-developer', 'title': 'Cara Membuat Portfolio Developer yang Menarik',
+            'content': 'Portfolio adalah kunci untuk mendapatkan pekerjaan sebagai developer. Pelajari cara membuatnya...',
+            'excerpt': 'Panduan lengkap membuat portfolio yang menarik perhatian recruiter.',
+            'thumbnail': 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=400',
+            'category': 'karir', 'tags': ['portfolio', 'karir', 'tips'], 'author': 'Firza Ilmi', 'views': 2100, 'created_at': now, 'updated_at': now
+        }
+    ]
+    
+    # Seed FAQs
+    faqs = [
+        {'id': str(uuid.uuid4()), 'question': 'Apakah saya perlu pengalaman coding sebelumnya?', 'answer': 'Tidak! Kursus kami dirancang untuk pemula. Kamu bisa mulai dari nol dan belajar step by step.', 'category': 'general', 'order': 1},
+        {'id': str(uuid.uuid4()), 'question': 'Bagaimana cara mengakses kursus premium?', 'answer': 'Kamu bisa berlangganan paket Pro atau Enterprise untuk mengakses semua kursus premium, live class, dan fitur eksklusif lainnya.', 'category': 'subscription', 'order': 2},
+        {'id': str(uuid.uuid4()), 'question': 'Apakah ada sertifikat setelah menyelesaikan kursus?', 'answer': 'Ya! Setiap kursus yang diselesaikan akan mendapatkan sertifikat digital yang bisa kamu bagikan di LinkedIn atau CV.', 'category': 'certificate', 'order': 3},
+        {'id': str(uuid.uuid4()), 'question': 'Berapa lama akses kursus berlaku?', 'answer': 'Untuk kursus yang sudah dibeli atau selama berlangganan aktif, kamu bisa mengakses materi selamanya tanpa batas waktu.', 'category': 'subscription', 'order': 4},
+        {'id': str(uuid.uuid4()), 'question': 'Bagaimana jika saya stuck atau butuh bantuan?', 'answer': 'Kamu bisa bertanya di forum komunitas, menggunakan fitur AI chatbot, atau hubungi mentor langsung via live class (untuk member Pro/Enterprise).', 'category': 'support', 'order': 5}
+    ]
+    
+    # Seed live classes
+    live_classes = [
+        {
+            'id': str(uuid.uuid4()), 'title': 'Live Coding: Build Todo App with React',
+            'description': 'Belajar membuat aplikasi Todo dari nol menggunakan React.js dan hooks.',
+            'instructor': 'Firza Ilmi', 'scheduled_at': (datetime.now(timezone.utc) + timedelta(days=3)).isoformat(),
+            'duration_minutes': 90, 'meeting_url': 'https://meet.google.com/abc-defg-hij',
+            'max_participants': 100, 'participants_count': 45, 'created_at': now
+        },
+        {
+            'id': str(uuid.uuid4()), 'title': 'Q&A Session: Karir sebagai Developer',
+            'description': 'Sesi tanya jawab seputar persiapan karir, interview, dan tips sukses sebagai developer.',
+            'instructor': 'Firza Ilmi', 'scheduled_at': (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            'duration_minutes': 60, 'meeting_url': 'https://meet.google.com/xyz-uvwx-rst',
+            'max_participants': 200, 'participants_count': 78, 'created_at': now
+        }
+    ]
+    
+    # Insert data
+    await db.courses.delete_many({})
+    await db.articles.delete_many({})
+    await db.faqs.delete_many({})
+    await db.live_classes.delete_many({})
+    
+    await db.courses.insert_many(courses)
+    await db.articles.insert_many(articles)
+    await db.faqs.insert_many(faqs)
+    await db.live_classes.insert_many(live_classes)
+    
+    return {"message": "Seed data created successfully"}
+
+# ============ Certificate Routes ============
+
+@api_router.get("/certificates/{course_id}", response_model=CertificateResponse)
+async def get_certificate(course_id: str, user: dict = Depends(get_current_user)):
+    # 1. Check if certificate already exists
+    cert = await db.certificates.find_one({'user_id': user['id'], 'course_id': course_id}, {'_id': 0})
+    if cert:
+        return CertificateResponse(**cert)
+    
+    # 2. Check course exists
+    course = await db.courses.find_one({'id': course_id})
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # 3. Check progress (Verify all videos completed)
+    total_videos = await db.videos.count_documents({'course_id': course_id})
+    if total_videos == 0:
+        raise HTTPException(status_code=400, detail="Course curriculum not set up")
+        
+    completed_videos = await db.progress.count_documents({
+        'user_id': user['id'], 
+        'course_id': course_id,
+        'completed': True
+    })
+    
+    # logic completion check: if completed >= total
+    if completed_videos < total_videos:
+        raise HTTPException(status_code=403, detail="Selesaikan semua materi sebelum mengklaim sertifikat")
+    
+    # 4. Create Certificate
+    cert_id = f"CERT-{uuid.uuid4().hex[:12].upper()}"
+    now = datetime.now(timezone.utc).isoformat()
+    
+    cert_doc = {
+        'id': cert_id,
+        'user_id': user['id'],
+        'user_name': user['name'],
+        'course_id': course_id,
+        'course_title': course['title'],
+        'issued_at': now,
+        'is_signed': False,
+        'signature_url': None
+    }
+    await db.certificates.insert_one(cert_doc)
+    return CertificateResponse(**cert_doc)
+
+@api_router.get("/admin/certificates", response_model=List[CertificateResponse])
+async def get_all_certificates(admin: dict = Depends(get_admin_user)):
+    certs = await db.certificates.find({}, {'_id': 0}).sort('issued_at', -1).to_list(100)
+    return certs
+
+@api_router.post("/admin/certificates/{cert_id}/sign")
+async def sign_certificate(cert_id: str, signature_url: Optional[str] = None, admin: dict = Depends(get_admin_user)):
+    # Default signature if none provided
+    if not signature_url:
+        signature_url = "https://customer-assets.emergentagent.com/job_f18ca982-69d5-4169-9c73-02205ce66a01/artifacts/signature_demo.png"
+        
+    result = await db.certificates.update_one(
+        {'id': cert_id},
+        {'$set': {'is_signed': True, 'signature_url': signature_url}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Certificate not found")
+    return {"message": "Sertifikat berhasil ditandatangani"}
+
+@api_router.get("/dashboard/courses")
+async def get_dashboard_courses(user: dict = Depends(get_current_user)):
+    # Fetch courses user is enrolled in.
+    # For now, let's assume they have access to all courses if premium, or just show all for demo
+    courses = await db.courses.find({}, {'_id': 0}).to_list(100)
+    
+    # Enrich with progress
+    for course in courses:
+        total_videos = await db.videos.count_documents({'course_id': course['id']})
+        completed_videos = await db.progress.count_documents({
+            'user_id': user['id'],
+            'course_id': course['id'],
+            'completed': True
+        })
+        
+        if total_videos > 0:
+            course['progress'] = int((completed_videos / total_videos) * 100)
+        else:
+            course['progress'] = 0
+            
+        course['total_videos'] = total_videos
+        course['completed_videos'] = completed_videos
+        
+    return courses
+
+@api_router.get("/certificates", response_model=List[CertificateResponse])
+async def get_user_certificates(user: dict = Depends(get_current_user)):
+    certs = await db.certificates.find({'user_id': user['id']}, {'_id': 0}).sort('issued_at', -1).to_list(100)
+    return certs
+
+# ============ Root ============
+
+@api_router.get("/")
+async def root():
+    return {"message": "Mavecode API v1.0", "status": "running"}
+
+# Include router and middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(api_router)
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()

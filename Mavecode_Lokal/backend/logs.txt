@@ -1,0 +1,81 @@
+Vercel CLI 50.9.3
+Fetching deployment "mavecodedev-backend-lrwe3iwhn-firza-miftahul-ilmis-projects.vercel.app" in firza-miftahul-ilmis-projects
+Displaying runtime logs for deployment mavecodedev-backend-lrwe3iwhn-firza-miftahul-ilmis-projects.vercel.app (dpl_EvhrsDv65iV2JAQjtWDWKszsS3mq) starting from Mar Mo 17:52:58.21
+
+waiting for new logs...
+17:52:59.15  🚫  GET  ---  api.mavecode.my.id  ƒ  /api/courses
+--------------------------------------------------------------
+Exception in ASGI application
+
+Traceback (most recent call last):
+  File "/var/task/_vendor/vercel_runtime/_vendor/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/task/_vendor/vercel_runtime/_vendor/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/task/_vendor/vercel_runtime/vc_init.py", line 657, in __call__
+    await self.app(new_scope, receive, send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/fastapi/applications.py", line 1054, in __call__
+    await super().__call__(scope, receive, send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/applications.py", line 123, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/routing.py", line 756, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/routing.py", line 776, in app
+    await route.handle(scope, receive, send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/routing.py", line 297, in handle
+    await self.app(scope, receive, send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/routing.py", line 77, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+    raise exc
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    await app(scope, receive, sender)
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/starlette/routing.py", line 72, in app
+    response = await func(request)
+               ^^^^^^^^^^^^^^^^^^^
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/fastapi/routing.py", line 278, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/task/server.py", line 450, in get_courses
+    courses = await db.courses.find(query, {'_id': 0}).to_list(100)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/motor/core.py", line 1657, in _to_list
+    result = get_more_result.result()
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/lang/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/pymongo/cursor.py", line 1153, in _refresh
+    self.__session = self.__collection.database.client._ensure_session()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/pymongo/mongo_client.py", line 1868, in _ensure_session
+    return self.__start_session(True, causal_consistency=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/pymongo/mongo_client.py", line 1811, in __start_session
+    self._topology._check_implicit_session_support()
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/pymongo/topology.py", line 583, in _check_implicit_session_support
+    self._check_session_support()
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/pymongo/topology.py", line 599, in _check_session_support
+    self._select_servers_loop(
+  File "/tmp/_vc_deps/lib/python3.12/site-packages/pymongo/topology.py", line 269, in _select_servers_loop
+    raise ServerSelectionTimeoutError(
+pymongo.errors.ServerSelectionTimeoutError: SSL handshake failed: ac-26gegso-shard-00-00.uviruhc.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1010),SSL handshake failed: ac-26gegso-shard-00-01.uviruhc.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1010),SSL handshake failed: ac-26gegso-shard-00-02.uviruhc.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1010), Timeout: 5.0s, Topology Description: <TopologyDescription id: 69a56bf196631452fe2e0074, topology_type: ReplicaSetNoPrimary, servers: [<ServerDescription ('ac-26gegso-shard-00-00.uviruhc.mongodb.net', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('SSL handshake failed: ac-26gegso-shard-00-00.uviruhc.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1010)')>, <ServerDescription ('ac-26gegso-shard-00-01.uviruhc.mongodb.net', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('SSL handshake failed: ac-26gegso-shard-00-01.uviruhc.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1010)')>, <ServerDescription ('ac-26gegso-shard-00-02.uviruhc.mongodb.net', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('SSL handshake failed: ac-26gegso-shard-00-02.uviruhc.mongodb.net:27017: [SSL: TLSV1_ALERT_INTERNAL_ERROR] tlsv1 alert internal error (_ssl.c:1010)')>]>
+
+waiting for new logs...
