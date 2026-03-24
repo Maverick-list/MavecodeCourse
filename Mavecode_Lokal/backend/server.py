@@ -876,18 +876,18 @@ async def update_progress(data: UserProgress, user: dict = Depends(get_current_u
     return {"message": "Progress updated"}
 
 @api_router.get("/progress/{course_id}")
-async def get_progress(course_id: str, user: dict = Depends(get_current_user)):
-    progress = await db.progress.find(
-        {'user_id': user['id'], 'course_id': course_id}, 
-        {'_id': 0}
     ).to_list(100)
     return progress
 
-# ============ AI Chatbot ============
+# ============ AI Chatbot & MaveMentor Dual-Engine ============
 import httpx
 
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent'
+
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY')
+DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
+
 SYSTEM_PROMPT = """Kamu adalah Mavecode AI, asisten cerdas untuk platform belajar coding Mavecode. 
 
 ## PRINSIP PERCAKAPAN KAMU:
@@ -935,85 +935,102 @@ Kamu pilih nomor berapa? 😊"
 
 Ingat: Tanya dulu -> Beri Opsi -> Jawab Jelas -> Beri Rekomendasi Selanjutnya!"""
 
+async def call_gemini(message, system_instruction=None, contents=None):
+    if not GEMINI_API_KEY:
+        return None, "API Key Missing"
+    
+    payload = {}
+    if system_instruction:
+        payload["system_instruction"] = {"parts": [{"text": system_instruction}]}
+    
+    if contents:
+        payload["contents"] = contents
+    else:
+        payload["contents"] = [{"role": "user", "parts": [{"text": message}]}]
+        
+    payload["generationConfig"] = {"temperature": 0.8, "maxOutputTokens": 2048}
+
+    try:
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            response = await client.post(f"{GEMINI_URL}?key={GEMINI_API_KEY}", json=payload)
+            result = response.json()
+            if response.status_code == 200 and "candidates" in result and result["candidates"]:
+                return result["candidates"][0]["content"]["parts"][0]["text"], None
+            
+            err_msg = f"Gemini Error: Status {response.status_code}"
+            if "error" in result:
+                err_msg += f", Detail: {result['error'].get('message', 'Unknown')}"
+            return None, err_msg
+    except httpx.RequestError as e:
+        return None, f"Gemini Request Error: {e}"
+    except Exception as e:
+        return None, f"Gemini Unexpected Error: {e}"
+
+async def call_deepseek(message, system_prompt=None, history=None):
+    if not DEEPSEEK_API_KEY:
+        return None, "DeepSeek API Key Missing"
+    
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    
+    if history:
+        for msg in history:
+            role = "assistant" if msg.get("role") == "model" or msg.get("role") == "assistant" else "user"
+            messages.append({"role": role, "content": msg.get("content", "")})
+    
+    if message:
+        messages.append({"role": "user", "content": message})
+
+    payload = {
+        "model": "deepseek-chat",
+        "messages": messages,
+        "stream": False
+    }
+
+    headers = {
+        "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            response = await client.post(DEEPSEEK_URL, json=payload, headers=headers)
+            result = response.json()
+            if response.status_code == 200 and "choices" in result and result["choices"]:
+                return result["choices"][0]["message"]["content"], None
+            
+            err_msg = f"DeepSeek Error: Status {response.status_code}"
+            if "error" in result:
+                err_msg += f", Detail: {result['error'].get('message', 'Unknown')}"
+            return None, err_msg
+    except httpx.RequestError as e:
+        return None, f"DeepSeek Request Error: {e}"
+    except Exception as e:
+        return None, f"DeepSeek Unexpected Error: {e}"
+
 @api_router.post("/chat", response_model=ChatResponse)
 async def chat_with_ai(data: ChatMessage):
     session_id = data.session_id or str(uuid.uuid4())
-    api_key = os.environ.get('GEMINI_API_KEY')
     
-    if not api_key:
-        return ChatResponse(
-            response="Waduh, kuncinya (API Key) lagi ilang nih. 😅 Coba cek .env ya!",
-            session_id=session_id
-        )
+    # Try Gemini First
+    res, err = await call_gemini(data.message, system_instruction=SYSTEM_PROMPT)
+    if res: return ChatResponse(response=res, session_id=session_id)
     
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            payload = {
-                "system_instruction": {
-                    "parts": [{"text": SYSTEM_PROMPT}]
-                },
-                "contents": [
-                    {"role": "user", "parts": [{"text": data.message}]}
-                ],
-                "generationConfig": {
-                    "temperature": 0.8,
-                    "topK": 40,
-                    "topP": 0.95,
-                    "maxOutputTokens": 1024
-                }
-            }
-            
-            response = await client.post(
-                f"{GEMINI_URL}?key={api_key}",
-                json=payload
-            )
-            
-            result = response.json()
-            
-            if response.status_code != 200:
-                print(f"DEBUG GEMINI ERROR: Status {response.status_code}, Body: {result}")
-            
-            if response.status_code == 429:
-                return ChatResponse(
-                    response="Aduh, aku lagi rame banget nih yang nanya! ⏳ Coba colek lagi 1 menit lagi ya!",
-                    session_id=session_id
-                )
-            
-            if "candidates" in result and result["candidates"]:
-                ai_response = result["candidates"][0]["content"]["parts"][0]["text"]
-                return ChatResponse(response=ai_response, session_id=session_id)
-            elif "error" in result:
-                err_msg = result['error'].get('message', 'Unknown Error')
-                return ChatResponse(
-                    response=f"Ups, ada gangguan sinyal ke otak AI-ku. 😅 (Status: {response.status_code})",
-                    session_id=session_id
-                )
-            else:
-                raise Exception("Format response Gemini tidak dikenal")
-                
-    except Exception as e:
-        print(f"CRITICAL CHAT ERROR: {e}")
-        return ChatResponse(
-            response="Aduh, otak AI-ku lagi konslet. 🔌 Coba tanya lagi bentar lagi ya!",
-            session_id=session_id
-        )
+    # Fallback to DeepSeek if Gemini fails (usually 429 or 500)
+    print(f"DEBUG: Gemini Failed ({err}), falling back to DeepSeek...")
+    res, err = await call_deepseek(data.message, system_prompt=SYSTEM_PROMPT)
+    if res: return ChatResponse(response=f"[FALLBACK ACTIVE] {res}", session_id=session_id)
+    
+    return ChatResponse(response="Aduh, otak AI-ku lagi bener-bener konslet (Dual Engine Failed). 🔌", session_id=session_id)
 
 @api_router.post("/mavementor", response_model=ChatResponse)
 async def mavementor_chat(data: MaveMentorRequest):
     session_id = str(uuid.uuid4())
-    api_key = os.environ.get('GEMINI_API_KEY')
+    language = data.pageContext.get("language", "JavaScript")
+    topic = data.pageContext.get("topic", "General Coding")
     
-    if not api_key:
-        return ChatResponse(
-            response="Waduh, kuncinya (API Key) lagi ilang nih. 😅 Coba cek .env ya!",
-            session_id=session_id
-        )
-    
-    try:
-        language = data.pageContext.get("language", "JavaScript")
-        topic = data.pageContext.get("topic", "General Coding")
-        
-        system_prompt = f"""Kamu adalah MaveMentor, Asisten AI dan Code Reviewer pribadimu untuk platform Mavecode.
+    system_prompt = f"""Kamu adalah MaveMentor, Asisten AI dan Code Reviewer pribadimu untuk platform Mavecode.
 Kamu sedang membantu pengguna belajar: {topic} (Konteks Terdeteksi: {language}).
 
 INSTRUKSI KRITIS:
@@ -1022,66 +1039,44 @@ INSTRUKSI KRITIS:
 3. Mode Code Editor: Identifikasi bug, jelaskan secara simpel, dan berikan perbaikan kode yang sudah dioptimasi.
 4. Mode Chat: Beri penjelasan konseptual tingkat lanjut dengan contoh sepotong kecil jika membantu.
 5. Gunakan Markdown untuk format balasanmu. Gunakan blok kode baku (```language) jika perlu menampilkan kode.
-"""
+6. PENTING: Untuk metrik, SELALU sertakan string [METRICS:{{"score":X,"performance":Y,"security":Z,"readability":W}}] di paling akhir jawaban."""
+
+    user_prompt = ""
+    if data.mode == "code":
+        user_prompt = f"Tolong review kode berikut:\n\n```{language}\n{data.code}\n```\n\nPesan/Instruksi dariku: {data.message or 'Review kode ini untuk best practice dan bug tersembunyi.'}"
+    else:
+        user_prompt = data.message or "Halo MaveMentor!"
+
+    # Gemini Format
+    contents = []
+    for msg in data.history:
+        role = "model" if msg.get("role") == "assistant" else "user"
+        contents.append({"role": role, "parts": [{"text": msg.get("content", "")}]})
+    
+    if not contents:
+        contents.append({"role": "user", "parts": [{"text": f"{system_prompt}\n\n---\n\n{user_prompt}"}]})
+    else:
+        # Prepend system prompt to the first user message in history
+        if contents[0]["role"] == "user":
+            contents[0]["parts"][0]["text"] = f"{system_prompt}\n\n---\n\n{contents[0]['parts'][0]['text']}"
+        else: # If history starts with assistant, add a new user message with system prompt and user_prompt
+            contents.insert(0, {"role": "user", "parts": [{"text": f"{system_prompt}\n\n---\n\n{user_prompt}"}]})
+            user_prompt = "" # Clear user_prompt as it's already in the first message
         
-        contents = []
-        for msg in data.history:
-            role = "model" if msg.get("role") == "assistant" else "user"
-            contents.append({"role": role, "parts": [{"text": msg.get("content", "")}]})
-            
-        user_prompt = ""
-        if data.mode == "code":
-            user_prompt = f"Tolong review kode berikut:\n\n```{language}\n{data.code}\n```\n\nPesan/Instruksi dariku: {data.message or 'Review kode ini untuk best practice dan bug tersembunyi.'}"
-        else:
-            user_prompt = data.message or "Halo MaveMentor!"
-            
-        if not contents:
-             user_prompt = f"{system_prompt}\n\n---\n\nPesan User:\n{user_prompt}"
-             contents.append({"role": "user", "parts": [{"text": user_prompt}]})
-        else:
-             if contents[0]["role"] == "user":
-                  contents[0]["parts"][0]["text"] = f"{system_prompt}\n\n---\n\n{contents[0]['parts'][0]['text']}"
-             contents.append({"role": "user", "parts": [{"text": user_prompt}]})
-             
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            payload = {
-                "contents": contents,
-                "generationConfig": {
-                    "temperature": 0.7,
-                    "maxOutputTokens": 2048
-                }
-            }
-            
-            response = await client.post(
-                f"{GEMINI_URL}?key={api_key}",
-                json=payload
-            )
-            
-            result = response.json()
-            
-            if response.status_code == 429:
-                return ChatResponse(
-                    response="Aduh, antrian review kode lagi padat! ⏳ Coba lagi ya beberapa detik lagi.",
-                    session_id=session_id
-                )
-                
-            if "candidates" in result and result["candidates"]:
-                ai_response = result["candidates"][0]["content"]["parts"][0]["text"]
-                return ChatResponse(response=ai_response, session_id=session_id)
-            elif "error" in result:
-                return ChatResponse(
-                    response=f"Ups, ada gangguan sinyal sistem MaveMentor. 😅 (Status: {response.status_code})",
-                    session_id=session_id
-                )
-            else:
-                return ChatResponse(response="Respon AI tidak dapat dikenali sistem.", session_id=session_id)
-                
-    except Exception as e:
-        print(f"CRITICAL MAVEMENTOR ERROR: {e}")
-        return ChatResponse(
-            response="Aduh, otak AI-ku lagi nge-hang sebentar. 🔌 Coba tanya lagi ya!",
-            session_id=session_id
-        )
+        if user_prompt: # Only append if user_prompt wasn't already prepended
+            contents.append({"role": "user", "parts": [{"text": user_prompt}]})
+
+    # Try Gemini 
+    res, err = await call_gemini(None, system_instruction=None, contents=contents)
+    if res: return ChatResponse(response=res, session_id=session_id)
+
+    # Fallback to DeepSeek
+    print(f"DEBUG MAVEMENTOR: Gemini Failed ({err}), falling back to DeepSeek...")
+    # For DeepSeek, we pass the system_prompt separately and the history as is
+    res, err = await call_deepseek(user_prompt, system_prompt=system_prompt, history=data.history)
+    if res: return ChatResponse(response=res, session_id=session_id)
+
+    return ChatResponse(response="MaveMentor Dimensi sedang gangguan sinyal. 🔌", session_id=session_id)
 
 # ============ Categories ============
 
