@@ -7,7 +7,6 @@ import { FirebaseProvider } from './context/FirebaseContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Chatbot from './components/Chatbot';
-import MaveMentor from './components/MaveMentor';
 import { FocusModeProvider } from './context/FocusModeContext';
 import FocusModeWidget from './components/FocusModeWidget';
 import CyberpunkLoader from './components/CyberpunkLoader';
@@ -34,6 +33,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import ProfilePage from './pages/ProfilePage';
 import CertificatePage from './pages/CertificatePage';
 import TranslationPage from './pages/TranslationPage';
+import MentorDashboard from './pages/MentorDashboard';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -78,7 +78,6 @@ const MainLayout = ({ children }) => {
       </main>
       <Footer />
       <Chatbot />
-      <MaveMentor />
     </div>
   );
 };
@@ -99,6 +98,7 @@ const AppContent = () => {
         <Route path="/translate" element={<MainLayout><TranslationPage /></MainLayout>} />
         <Route path="/live" element={<MainLayout><LiveClassPage /></MainLayout>} />
         <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
+        <Route path="/mentor" element={<MainLayout><MentorDashboard /></MainLayout>} />
 
         {/* Auth Routes */}
         <Route path="/login" element={<MainLayout><LoginPage /></MainLayout>} />

@@ -24,6 +24,7 @@ const navLinks = [
   { name: 'Harga', href: '/pricing', icon: Tag },
   { name: 'Translate', href: '/translate', icon: Globe },
   { name: 'FAQ', href: '/faq', icon: HelpCircle },
+  { name: 'MaveMentor', href: '/mentor', icon: Sparkles, isNew: true },
 ];
 
 const LanguageSelector = () => {
