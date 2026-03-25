@@ -88,7 +88,7 @@ const Navbar = () => {
                 <div className="absolute inset-0 rounded-xl bg-primary/20 animate-pulse -z-10 group-hover:scale-125 transition-transform" />
               </div>
               <span className="font-heading text-2xl font-black tracking-widest flex items-center">
-                <span className="text-primary">MAVETEST</span>
+                <span className="text-primary">MAVE</span>
                 <span style={{ color: '#f97316' }}>CODE</span>
               </span>
             </Link>

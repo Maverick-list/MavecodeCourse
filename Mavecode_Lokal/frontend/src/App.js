@@ -239,10 +239,6 @@ function App() {
     if (surveyCompleted) {
       setAppPhase('app');
     }
-    // DEPLOYMENT VERIFICATION
-    if (window.location.hostname === 'course.mavecode.my.id') {
-      alert("DEPLOY_VERIFIED_BUILD_3ea");
-    }
   }, []);
 
   const handleLoadingComplete = useCallback(() => {
