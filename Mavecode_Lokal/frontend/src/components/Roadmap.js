@@ -69,7 +69,7 @@ const Roadmap = () => {
   });
 
   return (
-    <section ref={containerRef} className="py-24 relative bg-card/50 dark:bg-black/80 font-mono text-foreground overflow-hidden transition-colors duration-500">
+    <section ref={containerRef} className="py-24 relative bg-background font-mono text-foreground overflow-hidden transition-colors duration-500">
       <div className="max-w-7xl mx-auto px-4 relative z-10">
         
         {/* Header and Switches */}

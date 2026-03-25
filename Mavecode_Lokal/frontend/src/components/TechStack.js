@@ -60,7 +60,7 @@ const TechStack = () => {
   ];
 
   return (
-    <section className="py-24 relative overflow-hidden bg-card/30 dark:bg-black/60 font-mono transition-colors duration-500">
+    <section className="py-24 relative overflow-hidden bg-background font-mono transition-colors duration-500">
       <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,rgba(62,48,154,0.15),transparent_70%)]" />
       
       <div className="max-w-7xl mx-auto px-4 relative z-10">

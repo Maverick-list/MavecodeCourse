@@ -97,7 +97,6 @@ const AppContent = () => {
         <Route path="/articles/:slug" element={<MainLayout><ArticleDetailPage /></MainLayout>} />
         <Route path="/pricing" element={<MainLayout><PricingPage /></MainLayout>} />
         <Route path="/faq" element={<MainLayout><FAQPage /></MainLayout>} />
-        <Route path="/translate" element={<MainLayout><TranslationPage /></MainLayout>} />
         <Route path="/live" element={<MainLayout><LiveClassPage /></MainLayout>} />
         <Route path="/contact" element={<MainLayout><ContactPage /></MainLayout>} />
         <Route path="/mentor" element={<MainLayout><MentorDashboard /></MainLayout>} />

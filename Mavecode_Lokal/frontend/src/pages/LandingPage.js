@@ -90,7 +90,7 @@ export const LandingPage = () => {
   const isSplineInView = useInView(splineRef, { once: true, margin: "200px" });
 
   const [typewriterText, setTypewriterText] = useState("");
-  const fullBio = 'Fullstack & AI Engineer dengan pengalaman jasa website builder selama 5 bulan. Passionate dalam berbagi ilmu dan membantu developer pemula mencapai potensi terbaik mereka.';
+  const fullBio = 'Fullstack & AI Engineer dengan pengalaman jasa website builder selama 5 bulan. Passionate dalam berbagi ilmu dan membantu developer pemula mencapai potensi terbaik mereka dalam membangun solusi teknologi masa depan.';
 
   useEffect(() => {
     if (isMentorInView) {
@@ -156,7 +156,20 @@ export const LandingPage = () => {
       variants={staggerContainer}
       className="min-h-screen bg-background font-mono relative overflow-hidden selection:bg-primary selection:text-black animate-slide-up transition-colors duration-500"
     >
-      {/* Background Decorative */}
+   {/* Background Video */}
+      <div className="absolute top-0 left-0 w-full h-[150vh] overflow-hidden -z-10 bg-background">
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          className="w-full h-full object-cover opacity-30 grayscale saturate-0"
+        >
+          <source src="https://assets.mixkit.co/videos/preview/mixkit-coding-on-a-laptop-screen-in-close-up-34824-large.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background" />
+      </div>
+
       <div className="absolute top-0 left-0 w-full h-[150vh] bg-[radial-gradient(circle_at_top,rgba(0,255,255,0.05)_0%,transparent_50%)] -z-10" />
       <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[150px] -z-10" />
       
@@ -173,7 +186,7 @@ export const LandingPage = () => {
             {hero.subtitle}
           </p>
 
-          <div className="flex flex-wrap justify-center gap-6">
+          <div className="flex flex-wrap justify-center gap-6 mb-20">
             <Link to={user ? "/courses" : "/register"}>
               <motion.button 
                 whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(0,255,255,0.5)' }}
@@ -190,6 +203,18 @@ export const LandingPage = () => {
                 {t('viewDatalogs')}
               </motion.button>
             </Link>
+          </div>
+
+          {/* Spline Robot - Integrated at the Bottom of Hero View */}
+          <div ref={splineRef} className="relative mx-auto w-full max-w-4xl h-[400px] md:h-[500px] overflow-hidden rounded-[3rem] bg-gradient-to-b from-primary/10 to-transparent border border-border/20 shadow-[0_0_50px_rgba(0,255,255,0.1)] transition-all group pointer-events-none mt-16 scale-90 hover:scale-100 opacity-90">
+             {isSplineInView && (
+               <Suspense fallback={<div className="flex items-center justify-center h-full text-primary animate-pulse uppercase tracking-[10px]">{t('loadingAI')}</div>}>
+                 <Spline scene="https://prod.spline.design/gqqo80UMNmudDvXK/scene.splinecode" />
+               </Suspense>
+             )}
+             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/50 backdrop-blur-md rounded-full border border-primary/20 text-[10px] text-primary tracking-[5px] uppercase animate-pulse">
+                Neural_Assistant::v4.2_Linked
+             </div>
           </div>
         </motion.div>
       </section>
@@ -211,29 +236,12 @@ export const LandingPage = () => {
         </div>
       </section>
 
-      {/* 3D Robot Content */}
-      <section className="py-24 relative">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <motion.div variants={fadeUp} className="mb-12">
-            <h2 className="text-3xl md:text-5xl font-black italic text-foreground uppercase mb-4">{t('neuralAssistant').split(' ')[0]} <span className="text-primary">{t('neuralAssistant').split(' ').slice(1).join(' ')}</span></h2>
-            <p className="text-muted-foreground text-xs tracking-widest uppercase opacity-70">{t('interactAI')}</p>
-          </motion.div>
-
-          <div ref={splineRef} className="relative mx-auto w-full max-w-4xl h-[500px] md:h-[600px] overflow-hidden rounded-[3rem] bg-gradient-to-b from-primary/10 to-transparent border border-border transition-colors">
-            {isSplineInView && (
-              <Suspense fallback={<div className="flex items-center justify-center h-full text-primary animate-pulse uppercase tracking-[10px]">{t('loadingAI')}</div>}>
-                <Spline scene="https://prod.spline.design/gqqo80UMNmudDvXK/scene.splinecode" />
-              </Suspense>
-            )}
-          </div>
-        </div>
-      </section>
 
       {/* Tech Stack - Integrated below Robot */}
       <TechStack />
 
       {/* Mentor Section */}
-      <section className="py-32 relative overflow-hidden" ref={mentorRef}>
+      <section className="py-32 relative overflow-hidden bg-background" ref={mentorRef}>
         <div className="max-w-7xl mx-auto px-4 z-10 relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
             <motion.div variants={fadeUp} className="relative group">
@@ -252,9 +260,11 @@ export const LandingPage = () => {
                 <h2 className="text-5xl md:text-7xl font-black italic text-foreground uppercase mb-6 leading-none">
                   {leadMentor.name}
                 </h2>
-                <p className="text-muted-foreground text-lg md:text-xl font-bold leading-relaxed max-w-xl">
-                  {typewriterText}<span className="inline-block w-2 h-6 bg-accent animate-pulse ml-1" />
-                </p>
+                <div className="min-h-[120px]">
+                  <p className="text-muted-foreground text-lg md:text-xl font-bold leading-relaxed max-w-xl">
+                    {typewriterText}<span className="inline-block w-2 h-6 bg-accent animate-pulse ml-1" />
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">

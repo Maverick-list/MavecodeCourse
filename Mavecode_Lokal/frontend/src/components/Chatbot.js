@@ -104,9 +104,8 @@ export const Chatbot = () => {
       }
     } catch (err) {
       console.error('[Chatbot Error]:', err);
-      let errorDisplay = "Maaf, kepalaku lagi pusing sebentar. 🔌";
-      if (err.response?.status === 429) errorDisplay = "Waduh, aku lagi rame banget yang nanya! ⏳";
-      else if (!err.response && err.request) errorDisplay = "Backend-ku lagi tidur (5001). 😴";
+      let errorDisplay = "Maaf, kepalaku lagi pusing sebentar. 🔌 Sistem AI sedang otomatis mengalihkan server...";
+      if (!err.response && err.request) errorDisplay = "Backend-ku lagi tidur (5001). 😴";
 
       setMessages(prev => [...prev, {
         role: 'assistant',

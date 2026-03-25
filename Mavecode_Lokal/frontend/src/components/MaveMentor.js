@@ -10,8 +10,11 @@ import { API } from '../context/AppContext';
 const formatAIResponse = (text) => {
     if (!text) return null;
     
+    // Clean text by removing any metrics metadata
+    let cleanText = text.replace(/\[METRICS:.*?\]/g, '').trim();
+
     // Split text by markdown code blocks
-    const segments = text.split(/(```[\s\S]*?```)/g);
+    const segments = cleanText.split(/(```[\s\S]*?```)/g);
     
     return segments.map((segment, index) => {
         if (segment.startsWith('```')) {
@@ -32,11 +35,8 @@ const formatAIResponse = (text) => {
             );
         }
         
-        // Render normal text with basic markdown formatting (bold, etc.)
-        // This is a simple renderer; for production, a full Markdown parser like react-markdown is better,
-        // but this works very fast for basic needs.
         const formattedText = segment.split(/(\*\*.*?\*\*)/g).map((part, i) => {
-            if (part.startsWith('**') && part.endsWith('**')) {
+            if (part && part.startsWith('**') && part.endsWith('**')) {
                 return <strong key={i} className="text-white">{part.slice(2, -2)}</strong>;
             }
             return <span key={i}>{part}</span>;
